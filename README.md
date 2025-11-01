@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # 🧭 The Father's Ruler (Régua do Pai)
 
 **A free visual tool for developers to find X/Y coordinates inside PDFs and images.**  
@@ -184,3 +185,7 @@ Free for personal and commercial use — just credit the author.
 
 Created with ❤️ by Tobias Vicente Flores — Sapucaia do Sul, Brazil.
 Empowering developers to build smarter tools.
+=======
+# regua-do-pai
+Free tool for developers to find X/Y coordinates in PDFs. Created by Tobias Vicente Flores.
+>>>>>>> b05ff3fbd9d8296c1414f3793463cc6796c66ad0
