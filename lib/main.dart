@@ -19,7 +19,16 @@ class CoordInspectorApp extends StatelessWidget {
     return MaterialApp(
       title: 'PDF Coordinate Inspector',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(useMaterial3: true, colorSchemeSeed: Colors.indigo),
+      theme: ThemeData(
+        useMaterial3: true,
+        colorSchemeSeed: Colors.deepPurple,
+        brightness: Brightness.light,
+      ),
+      darkTheme: ThemeData(
+        useMaterial3: true,
+        colorSchemeSeed: Colors.deepPurple,
+        brightness: Brightness.dark,
+      ),
       home: const CoordHome(),
     );
   }
@@ -252,6 +261,7 @@ class _CoordHomeState extends State<CoordHome> {
             content: TextField(
               controller: c,
               autofocus: true,
+              onSubmitted: (value) => Navigator.pop(cxt, value),
               decoration: const InputDecoration(
                 hintText: 'e.g.: code_uc, address, power',
               ),
@@ -390,724 +400,1011 @@ class _CoordHomeState extends State<CoordHome> {
 
     return Scaffold(
       appBar: AppBar(
-        toolbarHeight: 48,
-        title: const Text(
-          'PDF Coordinate Inspector',
-          style: TextStyle(fontSize: 16),
-        ),
-        actions: [
-          IconButton(
-            tooltip: 'Open image…',
-            onPressed: _pickImage,
-            icon: const Icon(Icons.image_outlined, size: 20),
-            iconSize: 20,
-          ),
-          if (hasImg) ...[
-            const VerticalDivider(),
-            IconButton(
-              tooltip: 'Export JSON',
-              onPressed: _exportJson,
-              icon: const Icon(Icons.save_alt, size: 20),
-              iconSize: 20,
+        elevation: 0,
+        toolbarHeight: 64,
+        title: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.primaryContainer,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(
+                Icons.picture_as_pdf,
+                color: Theme.of(context).colorScheme.primary,
+                size: 24,
+              ),
             ),
-            IconButton(
-              tooltip: 'Import JSON',
-              onPressed: _importJson,
-              icon: const Icon(Icons.file_upload, size: 20),
-              iconSize: 20,
+            const SizedBox(width: 12),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text(
+                  'PDF Coordinate Inspector',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+                ),
+                Text(
+                  hasImg ? '${_markers.length} markers' : 'No image loaded',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
             ),
           ],
-          const SizedBox(width: 8),
+        ),
+        actions: [
+          FilledButton.tonalIcon(
+            onPressed: _pickImage,
+            icon: const Icon(Icons.image_outlined, size: 20),
+            label: const Text('Open Image'),
+            style: FilledButton.styleFrom(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            ),
+          ),
+          if (hasImg) ...[
+            const SizedBox(width: 8),
+            FilledButton.icon(
+              onPressed: _exportJson,
+              icon: const Icon(Icons.download, size: 20),
+              label: const Text('Export JSON'),
+              style: FilledButton.styleFrom(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 8,
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
+            OutlinedButton.icon(
+              onPressed: _importJson,
+              icon: const Icon(Icons.upload, size: 20),
+              label: const Text('Import JSON'),
+              style: OutlinedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 8,
+                ),
+              ),
+            ),
+          ],
+          const SizedBox(width: 16),
         ],
       ),
-      body: Column(
-        children: [
-          if (hasImg) ...[
-            Container(
-              color: Theme.of(context).colorScheme.surfaceContainerHighest,
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+      body:
+          hasImg
+              ? Row(
                 children: [
-                  // Grid controls row
-                  Wrap(
-                    crossAxisAlignment: WrapCrossAlignment.center,
-                    spacing: 12,
-                    runSpacing: 4,
-                    children: [
-                      Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Icon(Icons.grid_on, size: 14),
-                          const SizedBox(width: 2),
-                          const Text('Grid', style: TextStyle(fontSize: 12)),
-                          Tooltip(
-                            message: 'Show/hide grid overlay',
-                            child: Transform.scale(
-                              scale: 0.7,
-                              child: Switch(
-                                value: _showGrid,
-                                onChanged: (v) => setState(() => _showGrid = v),
-                                materialTapTargetSize:
-                                    MaterialTapTargetSize.shrinkWrap,
-                              ),
-                            ),
-                          ),
-                        ],
+                  // Left sidebar with controls
+                  Container(
+                    width: 320,
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).colorScheme.surfaceContainerLow,
+                      border: Border(
+                        right: BorderSide(
+                          color: Theme.of(context).colorScheme.outlineVariant,
+                          width: 1,
+                        ),
                       ),
-                      Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Icon(Icons.control_camera, size: 14),
-                          const SizedBox(width: 2),
-                          const Text('Snap', style: TextStyle(fontSize: 12)),
-                          Tooltip(
-                            message: 'Snap markers to grid points',
-                            child: Transform.scale(
-                              scale: 0.7,
-                              child: Switch(
-                                value: _snapToGrid,
-                                onChanged:
-                                    (v) => setState(() => _snapToGrid = v),
-                                materialTapTargetSize:
-                                    MaterialTapTargetSize.shrinkWrap,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                      Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Text('Step:', style: TextStyle(fontSize: 12)),
-                          const SizedBox(width: 4),
-                          Tooltip(
-                            message: 'Adjust grid spacing',
-                            child: SizedBox(
-                              width: 120,
-                              child: Slider(
-                                value: _gridStep,
-                                onChanged: (v) => setState(() => _gridStep = v),
-                                min: 4,
-                                max: 40,
-                                divisions: 9,
-                                label: '${_gridStep.toStringAsFixed(0)}px',
-                              ),
-                            ),
-                          ),
-                          Text(
-                            '${_gridStep.toStringAsFixed(0)}px',
-                            style: const TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ],
-                      ),
-                      Tooltip(
-                        message: 'Image dimensions (width × height in pixels)',
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
+                    ),
+                    child: ListView(
+                      padding: const EdgeInsets.all(16),
+                      children: [
+                        // Grid Controls Card
+                        _buildControlCard(
+                          context,
+                          title: 'Grid Settings',
+                          icon: Icons.grid_on,
                           children: [
-                            const Icon(
-                              Icons.photo_size_select_actual,
-                              size: 14,
+                            _buildSwitchRow(
+                              context,
+                              'Show Grid',
+                              _showGrid,
+                              (v) => setState(() => _showGrid = v),
                             ),
-                            const SizedBox(width: 3),
+                            const SizedBox(height: 12),
+                            _buildSwitchRow(
+                              context,
+                              'Snap to Grid',
+                              _snapToGrid,
+                              (v) => setState(() => _snapToGrid = v),
+                            ),
+                            const SizedBox(height: 16),
                             Text(
-                              '${_imgW.toStringAsFixed(0)}×${_imgH.toStringAsFixed(0)}',
-                              style: const TextStyle(fontSize: 11),
+                              'Grid Step: ${_gridStep.toStringAsFixed(0)}px',
+                              style: const TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                            Slider(
+                              value: _gridStep,
+                              onChanged: (v) => setState(() => _gridStep = v),
+                              min: 4,
+                              max: 40,
+                              divisions: 9,
+                              label: '${_gridStep.toStringAsFixed(0)}px',
                             ),
                           ],
                         ),
-                      ),
-                      Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Icon(Icons.picture_as_pdf, size: 14),
-                          const SizedBox(width: 3),
-                          const Text('W:', style: TextStyle(fontSize: 11)),
-                          Tooltip(
-                            message: 'PDF page width in points',
-                            child: SizedBox(
-                              width: 60,
-                              child: TextField(
-                                controller: _pdfWController,
-                                onSubmitted: (v) {
-                                  final newW = double.tryParse(v) ?? _pageW;
-                                  setState(() {
-                                    _pdfW = newW;
-                                    _pdfWController.text = newW.toStringAsFixed(
-                                      0,
-                                    );
-                                  });
-                                },
-                                keyboardType: TextInputType.number,
-                                style: const TextStyle(fontSize: 11),
-                                decoration: const InputDecoration(
-                                  isDense: true,
-                                  contentPadding: EdgeInsets.symmetric(
-                                    horizontal: 4,
-                                    vertical: 4,
-                                  ),
-                                ),
-                              ),
+                        const SizedBox(height: 16),
+
+                        // Dimensions Card
+                        _buildControlCard(
+                          context,
+                          title: 'Dimensions',
+                          icon: Icons.aspect_ratio,
+                          children: [
+                            _buildInfoRow(
+                              context,
+                              'Image',
+                              '${_imgW.toStringAsFixed(0)} × ${_imgH.toStringAsFixed(0)} px',
+                              Icons.photo_size_select_actual,
                             ),
-                          ),
-                          const SizedBox(width: 4),
-                          const Text('H:', style: TextStyle(fontSize: 11)),
-                          Tooltip(
-                            message: 'PDF page height in points',
-                            child: SizedBox(
-                              width: 60,
-                              child: TextField(
-                                controller: _pdfHController,
-                                onSubmitted: (v) {
-                                  final newH = double.tryParse(v) ?? _pageH;
-                                  setState(() {
-                                    _pdfH = newH;
-                                    _pdfHController.text = newH.toStringAsFixed(
-                                      0,
-                                    );
-                                  });
-                                },
-                                keyboardType: TextInputType.number,
-                                style: const TextStyle(fontSize: 11),
-                                decoration: const InputDecoration(
-                                  isDense: true,
-                                  contentPadding: EdgeInsets.symmetric(
-                                    horizontal: 4,
-                                    vertical: 4,
-                                  ),
-                                ),
-                              ),
+                            const SizedBox(height: 12),
+                            _buildInputRow(
+                              context,
+                              'PDF Width',
+                              _pdfWController,
+                              'points',
+                              (v) {
+                                final newW = double.tryParse(v) ?? _pageW;
+                                setState(() {
+                                  _pdfW = newW;
+                                  _pdfWController.text = newW.toStringAsFixed(
+                                    0,
+                                  );
+                                });
+                              },
                             ),
-                          ),
-                        ],
-                      ),
-                      // GoTo (go to X/Y – image (px) or PDF (pt))
-                      Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Icon(Icons.my_location, size: 14),
-                          const SizedBox(width: 3),
-                          const Text('GoTo:', style: TextStyle(fontSize: 11)),
-                          const SizedBox(width: 4),
-                          Tooltip(
-                            message:
-                                'Choose coordinate system: IMG (px) or PDF (pt)',
-                            child: DropdownButtonHideUnderline(
-                              child: DropdownButton<bool>(
-                                value: _gotoIsPdf,
-                                items: const [
-                                  DropdownMenuItem<bool>(
-                                    value: false,
-                                    child: Text(
-                                      'IMG',
-                                      style: TextStyle(fontSize: 11),
+                            const SizedBox(height: 12),
+                            _buildInputRow(
+                              context,
+                              'PDF Height',
+                              _pdfHController,
+                              'points',
+                              (v) {
+                                final newH = double.tryParse(v) ?? _pageH;
+                                setState(() {
+                                  _pdfH = newH;
+                                  _pdfHController.text = newH.toStringAsFixed(
+                                    0,
+                                  );
+                                });
+                              },
+                            ),
+                            const SizedBox(height: 12),
+                            Container(
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color:
+                                    Theme.of(
+                                      context,
+                                    ).colorScheme.secondaryContainer,
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Scale Factors',
+                                    style: TextStyle(
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w600,
+                                      color:
+                                          Theme.of(
+                                            context,
+                                          ).colorScheme.onSecondaryContainer,
                                     ),
                                   ),
-                                  DropdownMenuItem<bool>(
-                                    value: true,
-                                    child: Text(
-                                      'PDF',
-                                      style: TextStyle(fontSize: 11),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    'X: ${_scaleX.toStringAsFixed(4)}\nY: ${_scaleY.toStringAsFixed(4)}',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color:
+                                          Theme.of(
+                                            context,
+                                          ).colorScheme.onSecondaryContainer,
                                     ),
                                   ),
                                 ],
-                                onChanged:
-                                    (v) =>
-                                        setState(() => _gotoIsPdf = v ?? false),
                               ),
                             ),
-                          ),
-                          const SizedBox(width: 4),
-                          Tooltip(
-                            message:
-                                _gotoIsPdf
-                                    ? 'X in points (PDF)'
-                                    : 'X in pixels (image)',
-                            child: SizedBox(
-                              width: 70,
-                              child: TextField(
-                                controller: _gotoXController,
-                                keyboardType: TextInputType.number,
-                                style: const TextStyle(fontSize: 11),
-                                decoration: InputDecoration(
-                                  isDense: true,
-                                  hintText: _gotoIsPdf ? 'X (pt)' : 'X (px)',
-                                  contentPadding: const EdgeInsets.symmetric(
-                                    horizontal: 4,
-                                    vertical: 4,
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 4),
-                          Tooltip(
-                            message:
-                                _gotoIsPdf
-                                    ? 'Y in points (PDF). Origin bottom-left corner'
-                                    : 'Y in pixels (image). Origin top-left corner',
-                            child: SizedBox(
-                              width: 70,
-                              child: TextField(
-                                controller: _gotoYController,
-                                keyboardType: TextInputType.number,
-                                style: const TextStyle(fontSize: 11),
-                                decoration: InputDecoration(
-                                  isDense: true,
-                                  hintText: _gotoIsPdf ? 'Y (pt)' : 'Y (px)',
-                                  contentPadding: const EdgeInsets.symmetric(
-                                    horizontal: 4,
-                                    vertical: 4,
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 6),
-                          Tooltip(
-                            message: 'Center on point and open dialog to mark',
-                            child: FilledButton(
-                              style: FilledButton.styleFrom(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 10,
-                                  vertical: 6,
-                                ),
-                                minimumSize: const Size(0, 28),
-                                textStyle: const TextStyle(fontSize: 11),
-                              ),
-                              onPressed: () async {
-                                if (_img == null) return;
-                                final x = double.tryParse(
-                                  _gotoXController.text,
-                                );
-                                final y = double.tryParse(
-                                  _gotoYController.text,
-                                );
-                                if (x == null || y == null) return;
-                                Offset pos;
-                                if (_gotoIsPdf) {
-                                  // PDF (pt) -> imagem (px)
-                                  final imgX = _scaleX == 0 ? 0.0 : x / _scaleX;
-                                  final imgY =
-                                      _scaleY == 0
-                                          ? 0.0
-                                          : (_pageH - y) / _scaleY;
-                                  pos = Offset(imgX, imgY);
-                                } else {
-                                  pos = Offset(x, y);
-                                }
-                                // clamp e snap para consistência
-                                pos = Offset(
-                                  pos.dx.clamp(0, _imgW),
-                                  pos.dy.clamp(0, _imgH),
-                                );
-                                if (_snapToGrid && _gridStep > 0) {
-                                  pos = Offset(
-                                    (pos.dx / _gridStep).round() * _gridStep,
-                                    (pos.dy / _gridStep).round() * _gridStep,
-                                  );
-                                }
-                                _goTo(pos);
+                          ],
+                        ),
+                        const SizedBox(height: 16),
 
-                                // Open dialog to allow saving marker at this point
-                                final name = await _askName(context);
-                                if (name != null && name.trim().isNotEmpty) {
-                                  setState(
-                                    () => _markers.add(
-                                      MarkerPoint(name: name.trim(), pos: pos),
-                                    ),
-                                  );
-                                }
-                              },
-                              child: const Text('Go'),
-                            ),
-                          ),
-                        ],
-                      ),
-                      Tooltip(
-                        message:
-                            'Scale factors for converting image coordinates to PDF points',
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 3,
-                          ),
-                          decoration: BoxDecoration(
-                            color:
-                                Theme.of(context).colorScheme.primaryContainer,
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Text(
-                            'X:${_scaleX.toStringAsFixed(3)} Y:${_scaleY.toStringAsFixed(3)}',
-                            style: TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w600,
-                              color:
-                                  Theme.of(
-                                    context,
-                                  ).colorScheme.onPrimaryContainer,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  if (hoverImg != null) ...[
-                    const SizedBox(height: 4),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 4,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Theme.of(
+                        // Go To Coordinates Card
+                        _buildControlCard(
                           context,
-                        ).colorScheme.primaryContainer.withOpacity(0.3),
-                        borderRadius: BorderRadius.circular(4),
-                        border: Border.all(
-                          color: Theme.of(
-                            context,
-                          ).colorScheme.primary.withOpacity(0.3),
-                        ),
-                      ),
-                      child: Row(
-                        children: [
-                          Expanded(
-                            child: Text(
-                              '📍 IMG X:${hoverImg.dx.toStringAsFixed(1)} Y:${hoverImg.dy.toStringAsFixed(1)}  •  PDF x:${hoverPdf?.dx.toStringAsFixed(1)} y:${hoverPdf?.dy.toStringAsFixed(1)}',
-                              style: const TextStyle(
-                                fontSize: 11,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Tooltip(
-                            message: 'Add marker at current cursor position',
-                            child: FilledButton.icon(
-                              style: FilledButton.styleFrom(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 8,
-                                  vertical: 4,
+                          title: 'Navigate',
+                          icon: Icons.my_location,
+                          children: [
+                            SegmentedButton<bool>(
+                              segments: const [
+                                ButtonSegment(
+                                  value: false,
+                                  label: Text('Image (px)'),
                                 ),
-                                minimumSize: const Size(0, 28),
-                                textStyle: const TextStyle(fontSize: 11),
-                              ),
-                              onPressed: () async {
-                                final m = MarkerPoint(
-                                  name: 'campo_${_markers.length + 1}',
-                                  pos:
-                                      _snapToGrid && _gridStep > 0
-                                          ? Offset(
-                                            (hoverImg.dx / _gridStep).round() *
-                                                _gridStep,
-                                            (hoverImg.dy / _gridStep).round() *
-                                                _gridStep,
-                                          )
-                                          : hoverImg,
-                                );
-                                setState(() => _markers.add(m));
-                              },
-                              icon: const Icon(Icons.add_location, size: 14),
-                              label: const Text('Mark'),
+                                ButtonSegment(
+                                  value: true,
+                                  label: Text('PDF (pt)'),
+                                ),
+                              ],
+                              selected: {_gotoIsPdf},
+                              onSelectionChanged:
+                                  (v) => setState(() => _gotoIsPdf = v.first),
                             ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ],
-              ),
-            ),
-            const Divider(height: 1),
-          ],
-          Expanded(
-            child:
-                hasImg
-                    ? LayoutBuilder(
-                      builder: (ctx, constraints) {
-                        _viewportSize = Size(
-                          constraints.maxWidth,
-                          constraints.maxHeight,
-                        );
-                        return Listener(
-                          onPointerHover:
-                              (e) => _onHover(
-                                e,
-                                ctx.findRenderObject() as RenderBox,
-                              ),
-                          onPointerDown: (e) {
-                            if (e.buttons & kSecondaryMouseButton != 0) {
-                              _onSecondaryTapDown(
-                                e,
-                                ctx.findRenderObject() as RenderBox,
-                              );
-                            } else {
-                              _onPointerDown(
-                                e,
-                                ctx.findRenderObject() as RenderBox,
-                              );
-                            }
-                          },
-                          onPointerUp: (e) {
-                            _onPointerUp(
-                              e,
-                              ctx.findRenderObject() as RenderBox,
-                            );
-                          },
-                          child: InteractiveViewer(
-                            transformationController: _ivController,
-                            maxScale: 12,
-                            minScale: 0.2,
-                            boundaryMargin: const EdgeInsets.fromLTRB(
-                              800,
-                              800,
-                              800,
-                              2000,
-                            ),
-                            constrained: false,
-                            child: CustomPaint(
-                              size: Size(_imgW, _imgH),
-                              painter: _CanvasPainter(
-                                image: _img!,
-                                showGrid: _showGrid,
-                                gridStep: _gridStep,
-                                hover: _hoverScene,
-                                markers: _markers,
-                              ),
-                            ),
-                          ),
-                        );
-                      },
-                    )
-                    : Center(
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Text('Load a PDF screenshot (page 1, 2, 3...)'),
-                          const SizedBox(height: 12),
-                          Tooltip(
-                            message: 'Open image file',
-                            child: FilledButton.icon(
-                              onPressed: _pickImage,
-                              icon: const Icon(Icons.image_outlined),
-                              label: const Text('Open image'),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-          ),
-          if (_markers.isNotEmpty) ...[
-            const Divider(height: 1),
-            Container(
-              height: 96,
-              color: Theme.of(context).colorScheme.surface,
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              child: Row(
-                children: [
-                  // Clear all button
-                  Container(
-                    margin: const EdgeInsets.only(right: 8),
-                    child: Tooltip(
-                      message: 'Clear all markers',
-                      child: Material(
-                        color: Theme.of(context).colorScheme.errorContainer,
-                        borderRadius: BorderRadius.circular(6),
-                        child: InkWell(
-                          onTap: () async {
-                            final confirmed = await _confirm(
-                              context,
-                              'Remove all ${_markers.length} markers?',
-                            );
-                            if (confirmed) {
-                              setState(() => _markers.clear());
-                            }
-                          },
-                          borderRadius: BorderRadius.circular(6),
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 4,
-                            ),
-                            child: Column(
-                              mainAxisSize: MainAxisSize.min,
+                            const SizedBox(height: 16),
+                            Row(
                               children: [
-                                Icon(
-                                  Icons.delete_sweep,
-                                  size: 20,
-                                  color:
-                                      Theme.of(
-                                        context,
-                                      ).colorScheme.onErrorContainer,
+                                Expanded(
+                                  child: TextField(
+                                    controller: _gotoXController,
+                                    keyboardType: TextInputType.number,
+                                    decoration: InputDecoration(
+                                      labelText: 'X',
+                                      hintText:
+                                          _gotoIsPdf ? 'points' : 'pixels',
+                                      border: const OutlineInputBorder(),
+                                      isDense: true,
+                                    ),
+                                  ),
                                 ),
-                                const SizedBox(height: 2),
-                                Text(
-                                  'Clear\nAll',
-                                  textAlign: TextAlign.center,
-                                  style: TextStyle(
-                                    fontSize: 8,
-                                    height: 1.1,
-                                    color:
-                                        Theme.of(
-                                          context,
-                                        ).colorScheme.onErrorContainer,
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: TextField(
+                                    controller: _gotoYController,
+                                    keyboardType: TextInputType.number,
+                                    decoration: InputDecoration(
+                                      labelText: 'Y',
+                                      hintText:
+                                          _gotoIsPdf ? 'points' : 'pixels',
+                                      border: const OutlineInputBorder(),
+                                      isDense: true,
+                                    ),
                                   ),
                                 ),
                               ],
                             ),
-                          ),
+                            const SizedBox(height: 12),
+                            SizedBox(
+                              width: double.infinity,
+                              child: FilledButton.icon(
+                                onPressed: () async {
+                                  if (_img == null) return;
+                                  final x = double.tryParse(
+                                    _gotoXController.text,
+                                  );
+                                  final y = double.tryParse(
+                                    _gotoYController.text,
+                                  );
+                                  if (x == null || y == null) return;
+                                  Offset pos;
+                                  if (_gotoIsPdf) {
+                                    final imgX =
+                                        _scaleX == 0 ? 0.0 : x / _scaleX;
+                                    final imgY =
+                                        _scaleY == 0
+                                            ? 0.0
+                                            : (_pageH - y) / _scaleY;
+                                    pos = Offset(imgX, imgY);
+                                  } else {
+                                    pos = Offset(x, y);
+                                  }
+                                  pos = Offset(
+                                    pos.dx.clamp(0, _imgW),
+                                    pos.dy.clamp(0, _imgH),
+                                  );
+                                  if (_snapToGrid && _gridStep > 0) {
+                                    pos = Offset(
+                                      (pos.dx / _gridStep).round() * _gridStep,
+                                      (pos.dy / _gridStep).round() * _gridStep,
+                                    );
+                                  }
+                                  _goTo(pos);
+                                  final name = await _askName(context);
+                                  if (name != null && name.trim().isNotEmpty) {
+                                    setState(
+                                      () => _markers.add(
+                                        MarkerPoint(
+                                          name: name.trim(),
+                                          pos: pos,
+                                        ),
+                                      ),
+                                    );
+                                  }
+                                },
+                                icon: const Icon(Icons.navigation),
+                                label: const Text('Go & Mark'),
+                              ),
+                            ),
+                          ],
                         ),
-                      ),
+                        const SizedBox(height: 16),
+
+                        // Cursor Position Card
+                        if (hoverImg != null)
+                          _buildControlCard(
+                            context,
+                            title: 'Cursor Position',
+                            icon: Icons.location_searching,
+                            children: [
+                              _buildInfoRow(
+                                context,
+                                'Image',
+                                'X: ${hoverImg.dx.toStringAsFixed(1)}, Y: ${hoverImg.dy.toStringAsFixed(1)}',
+                                Icons.image,
+                              ),
+                              const SizedBox(height: 8),
+                              _buildInfoRow(
+                                context,
+                                'PDF',
+                                'X: ${hoverPdf?.dx.toStringAsFixed(1)}, Y: ${hoverPdf?.dy.toStringAsFixed(1)}',
+                                Icons.picture_as_pdf,
+                              ),
+                              const SizedBox(height: 12),
+                              SizedBox(
+                                width: double.infinity,
+                                child: FilledButton.tonalIcon(
+                                  onPressed: () async {
+                                    final m = MarkerPoint(
+                                      name: 'campo_${_markers.length + 1}',
+                                      pos:
+                                          _snapToGrid && _gridStep > 0
+                                              ? Offset(
+                                                (hoverImg.dx / _gridStep)
+                                                        .round() *
+                                                    _gridStep,
+                                                (hoverImg.dy / _gridStep)
+                                                        .round() *
+                                                    _gridStep,
+                                              )
+                                              : hoverImg,
+                                    );
+                                    setState(() => _markers.add(m));
+                                  },
+                                  icon: const Icon(Icons.add_location_alt),
+                                  label: const Text('Quick Mark'),
+                                ),
+                              ),
+                            ],
+                          ),
+                      ],
                     ),
                   ),
-                  // Marker list
+
+                  // Main canvas area
                   Expanded(
-                    child: ListView.separated(
-                      scrollDirection: Axis.horizontal,
-                      separatorBuilder: (_, __) => const SizedBox(width: 6),
-                      itemCount: _markers.length,
-                      itemBuilder: (_, i) {
-                        final m = _markers[i];
-                        final pdfX = m.pos.dx * _scaleX;
-                        final pdfY = (_pageH - m.pos.dy * _scaleY);
-                        return Container(
-                          constraints: const BoxConstraints(maxWidth: 150),
-                          padding: const EdgeInsets.all(6),
-                          decoration: BoxDecoration(
-                            color:
-                                Theme.of(context).colorScheme.primaryContainer,
-                            borderRadius: BorderRadius.circular(6),
-                            border: Border.all(
-                              color: Theme.of(
-                                context,
-                              ).colorScheme.primary.withOpacity(0.2),
-                            ),
+                    child: Column(
+                      children: [
+                        Expanded(
+                          child: LayoutBuilder(
+                            builder: (ctx, constraints) {
+                              _viewportSize = Size(
+                                constraints.maxWidth,
+                                constraints.maxHeight,
+                              );
+                              return Listener(
+                                onPointerHover:
+                                    (e) => _onHover(
+                                      e,
+                                      ctx.findRenderObject() as RenderBox,
+                                    ),
+                                onPointerDown: (e) {
+                                  if (e.buttons & kSecondaryMouseButton != 0) {
+                                    _onSecondaryTapDown(
+                                      e,
+                                      ctx.findRenderObject() as RenderBox,
+                                    );
+                                  } else {
+                                    _onPointerDown(
+                                      e,
+                                      ctx.findRenderObject() as RenderBox,
+                                    );
+                                  }
+                                },
+                                onPointerUp: (e) {
+                                  _onPointerUp(
+                                    e,
+                                    ctx.findRenderObject() as RenderBox,
+                                  );
+                                },
+                                child: InteractiveViewer(
+                                  transformationController: _ivController,
+                                  maxScale: 12,
+                                  minScale: 0.2,
+                                  boundaryMargin: const EdgeInsets.fromLTRB(
+                                    800,
+                                    800,
+                                    800,
+                                    2000,
+                                  ),
+                                  constrained: false,
+                                  child: CustomPaint(
+                                    size: Size(_imgW, _imgH),
+                                    painter: _CanvasPainter(
+                                      image: _img!,
+                                      showGrid: _showGrid,
+                                      gridStep: _gridStep,
+                                      hover: _hoverScene,
+                                      markers: _markers,
+                                    ),
+                                  ),
+                                ),
+                              );
+                            },
                           ),
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                children: [
-                                  Container(
-                                    width: 5,
-                                    height: 5,
-                                    decoration: const BoxDecoration(
-                                      color: Colors.redAccent,
-                                      shape: BoxShape.circle,
-                                    ),
+                        ),
+
+                        // Bottom markers panel
+                        if (_markers.isNotEmpty)
+                          Container(
+                            height: 80,
+                            decoration: BoxDecoration(
+                              color:
+                                  Theme.of(
+                                    context,
+                                  ).colorScheme.surfaceContainerLowest,
+                              border: Border(
+                                top: BorderSide(
+                                  color:
+                                      Theme.of(
+                                        context,
+                                      ).colorScheme.outlineVariant,
+                                  width: 1,
+                                ),
+                              ),
+                            ),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 8,
+                            ),
+                            child: Row(
+                              children: [
+                                // Header with count and clear button
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 12,
+                                    vertical: 8,
                                   ),
-                                  const SizedBox(width: 4),
-                                  Expanded(
-                                    child: Text(
-                                      m.name,
-                                      style: TextStyle(
-                                        fontSize: 11,
-                                        fontWeight: FontWeight.w700,
-                                        color:
-                                            Theme.of(
-                                              context,
-                                            ).colorScheme.onPrimaryContainer,
-                                      ),
-                                      overflow: TextOverflow.ellipsis,
-                                      maxLines: 1,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 3),
-                              Text(
-                                'IMG ${m.pos.dx.toStringAsFixed(0)},${m.pos.dy.toStringAsFixed(0)}',
-                                style: const TextStyle(fontSize: 9),
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                              Text(
-                                'PDF ${pdfX.toStringAsFixed(0)},${pdfY.toStringAsFixed(0)}',
-                                style: const TextStyle(fontSize: 9),
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                              const SizedBox(height: 2),
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.end,
-                                children: [
-                                  Tooltip(
-                                    message:
-                                        'Copy PDF coordinates to clipboard',
-                                    child: InkWell(
-                                      onTap: () {
-                                        Clipboard.setData(
-                                          ClipboardData(
-                                            text:
-                                                '{"x":${pdfX.toStringAsFixed(1)},"y":${pdfY.toStringAsFixed(1)}}',
-                                          ),
-                                        );
-                                        ScaffoldMessenger.of(
+                                  decoration: BoxDecoration(
+                                    color:
+                                        Theme.of(
                                           context,
-                                        ).showSnackBar(
-                                          SnackBar(
-                                            content: Text('Copied: ${m.name}'),
-                                            duration: const Duration(
-                                              milliseconds: 800,
-                                            ),
-                                          ),
-                                        );
-                                      },
-                                      child: Padding(
-                                        padding: const EdgeInsets.all(4),
-                                        child: Icon(
-                                          Icons.copy,
-                                          size: 14,
+                                        ).colorScheme.surfaceContainer,
+                                    borderRadius: BorderRadius.circular(8),
+                                    border: Border.all(
+                                      color:
+                                          Theme.of(
+                                            context,
+                                          ).colorScheme.outlineVariant,
+                                    ),
+                                  ),
+                                  child: Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Text(
+                                        '${_markers.length}',
+                                        style: TextStyle(
+                                          fontSize: 20,
+                                          fontWeight: FontWeight.w700,
                                           color:
                                               Theme.of(
                                                 context,
                                               ).colorScheme.primary,
                                         ),
                                       ),
-                                    ),
-                                  ),
-                                  Tooltip(
-                                    message: 'Delete this marker',
-                                    child: InkWell(
-                                      onTap: () async {
-                                        final confirmed = await _confirm(
-                                          context,
-                                          'Remove "${m.name}"?',
-                                        );
-                                        if (confirmed)
-                                          setState(() => _markers.removeAt(i));
-                                      },
-                                      child: Padding(
-                                        padding: const EdgeInsets.all(4),
-                                        child: Icon(
-                                          Icons.delete_outline,
-                                          size: 14,
+                                      Text(
+                                        'markers',
+                                        style: TextStyle(
+                                          fontSize: 9,
                                           color:
                                               Theme.of(
                                                 context,
-                                              ).colorScheme.error,
+                                              ).colorScheme.onSurfaceVariant,
                                         ),
                                       ),
-                                    ),
+                                    ],
                                   ),
-                                ],
-                              ),
-                            ],
+                                ),
+                                const SizedBox(width: 8),
+                                // Clear all button
+                                IconButton(
+                                  onPressed: () async {
+                                    final confirmed = await _confirm(
+                                      context,
+                                      'Remove all ${_markers.length} markers?',
+                                    );
+                                    if (confirmed) {
+                                      setState(() => _markers.clear());
+                                    }
+                                  },
+                                  icon: Icon(
+                                    Icons.delete_sweep,
+                                    color: Theme.of(context).colorScheme.error,
+                                  ),
+                                  tooltip: 'Clear all markers',
+                                  style: IconButton.styleFrom(
+                                    backgroundColor: Theme.of(context)
+                                        .colorScheme
+                                        .errorContainer
+                                        .withOpacity(0.5),
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                // Markers list
+                                Expanded(
+                                  child: ListView.separated(
+                                    scrollDirection: Axis.horizontal,
+                                    separatorBuilder:
+                                        (_, __) => const SizedBox(width: 6),
+                                    itemCount: _markers.length,
+                                    itemBuilder: (_, i) {
+                                      final m = _markers[i];
+                                      final pdfX = m.pos.dx * _scaleX;
+                                      final pdfY =
+                                          (_pageH - m.pos.dy * _scaleY);
+                                      return Material(
+                                        color: Colors.transparent,
+                                        child: InkWell(
+                                          onTap: () => _goTo(m.pos),
+                                          borderRadius: BorderRadius.circular(
+                                            6,
+                                          ),
+                                          child: Container(
+                                            constraints: const BoxConstraints(
+                                              minWidth: 160,
+                                              maxWidth: 250,
+                                            ),
+                                            padding: const EdgeInsets.all(8),
+                                            decoration: BoxDecoration(
+                                              color:
+                                                  Theme.of(context)
+                                                      .colorScheme
+                                                      .primaryContainer,
+                                              borderRadius:
+                                                  BorderRadius.circular(6),
+                                              border: Border.all(
+                                                color: Theme.of(context)
+                                                    .colorScheme
+                                                    .primary
+                                                    .withOpacity(0.4),
+                                                width: 1,
+                                              ),
+                                            ),
+                                            child: Column(
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment.start,
+                                              mainAxisSize: MainAxisSize.min,
+                                              children: [
+                                                // Header row: index + name + actions
+                                                Row(
+                                                  children: [
+                                                    Container(
+                                                      padding:
+                                                          const EdgeInsets.symmetric(
+                                                            horizontal: 6,
+                                                            vertical: 2,
+                                                          ),
+                                                      decoration: BoxDecoration(
+                                                        color:
+                                                            Theme.of(context)
+                                                                .colorScheme
+                                                                .primary,
+                                                        borderRadius:
+                                                            BorderRadius.circular(
+                                                              4,
+                                                            ),
+                                                      ),
+                                                      child: Text(
+                                                        '#${i + 1}',
+                                                        style: TextStyle(
+                                                          fontSize: 10,
+                                                          fontWeight:
+                                                              FontWeight.w700,
+                                                          color:
+                                                              Theme.of(context)
+                                                                  .colorScheme
+                                                                  .onPrimary,
+                                                        ),
+                                                      ),
+                                                    ),
+                                                    const SizedBox(width: 6),
+                                                    Expanded(
+                                                      child: Text(
+                                                        m.name,
+                                                        style: TextStyle(
+                                                          fontSize: 11,
+                                                          fontWeight:
+                                                              FontWeight.w700,
+                                                          color:
+                                                              Theme.of(context)
+                                                                  .colorScheme
+                                                                  .onPrimaryContainer,
+                                                        ),
+                                                        overflow:
+                                                            TextOverflow
+                                                                .ellipsis,
+                                                        maxLines: 1,
+                                                      ),
+                                                    ),
+                                                    // Actions
+                                                    InkWell(
+                                                      onTap: () {
+                                                        Clipboard.setData(
+                                                          ClipboardData(
+                                                            text:
+                                                                '{"x":${pdfX.toStringAsFixed(1)},"y":${pdfY.toStringAsFixed(1)}}',
+                                                          ),
+                                                        );
+                                                        ScaffoldMessenger.of(
+                                                          context,
+                                                        ).showSnackBar(
+                                                          SnackBar(
+                                                            content: Text(
+                                                              'Copied: ${m.name}',
+                                                            ),
+                                                            duration:
+                                                                const Duration(
+                                                                  milliseconds:
+                                                                      500,
+                                                                ),
+                                                          ),
+                                                        );
+                                                      },
+                                                      borderRadius:
+                                                          BorderRadius.circular(
+                                                            4,
+                                                          ),
+                                                      child: Padding(
+                                                        padding:
+                                                            const EdgeInsets.all(
+                                                              4,
+                                                            ),
+                                                        child: Icon(
+                                                          Icons.copy,
+                                                          size: 12,
+                                                          color:
+                                                              Theme.of(context)
+                                                                  .colorScheme
+                                                                  .primary,
+                                                        ),
+                                                      ),
+                                                    ),
+                                                    InkWell(
+                                                      onTap: () async {
+                                                        final confirmed =
+                                                            await _confirm(
+                                                              context,
+                                                              'Remove "${m.name}"?',
+                                                            );
+                                                        if (confirmed) {
+                                                          setState(
+                                                            () => _markers
+                                                                .removeAt(i),
+                                                          );
+                                                        }
+                                                      },
+                                                      borderRadius:
+                                                          BorderRadius.circular(
+                                                            4,
+                                                          ),
+                                                      child: Padding(
+                                                        padding:
+                                                            const EdgeInsets.all(
+                                                              4,
+                                                            ),
+                                                        child: Icon(
+                                                          Icons.close,
+                                                          size: 12,
+                                                          color:
+                                                              Theme.of(context)
+                                                                  .colorScheme
+                                                                  .error,
+                                                        ),
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                                const SizedBox(height: 6),
+                                                // Coordinates row
+                                                Row(
+                                                  children: [
+                                                    Container(
+                                                      padding:
+                                                          const EdgeInsets.symmetric(
+                                                            horizontal: 4,
+                                                            vertical: 2,
+                                                          ),
+                                                      decoration: BoxDecoration(
+                                                        color: Theme.of(context)
+                                                            .colorScheme
+                                                            .surface
+                                                            .withOpacity(0.3),
+                                                        borderRadius:
+                                                            BorderRadius.circular(
+                                                              3,
+                                                            ),
+                                                      ),
+                                                      child: Row(
+                                                        mainAxisSize:
+                                                            MainAxisSize.min,
+                                                        children: [
+                                                          Icon(
+                                                            Icons.image,
+                                                            size: 9,
+                                                            color: Theme.of(
+                                                                  context,
+                                                                )
+                                                                .colorScheme
+                                                                .onPrimaryContainer
+                                                                .withOpacity(
+                                                                  0.7,
+                                                                ),
+                                                          ),
+                                                          const SizedBox(
+                                                            width: 3,
+                                                          ),
+                                                          Text(
+                                                            '${m.pos.dx.toStringAsFixed(0)},${m.pos.dy.toStringAsFixed(0)}',
+                                                            style: TextStyle(
+                                                              fontSize: 9,
+                                                              fontWeight:
+                                                                  FontWeight
+                                                                      .w600,
+                                                              color: Theme.of(
+                                                                    context,
+                                                                  )
+                                                                  .colorScheme
+                                                                  .onPrimaryContainer
+                                                                  .withOpacity(
+                                                                    0.8,
+                                                                  ),
+                                                            ),
+                                                          ),
+                                                        ],
+                                                      ),
+                                                    ),
+                                                    const SizedBox(width: 4),
+                                                    Container(
+                                                      padding:
+                                                          const EdgeInsets.symmetric(
+                                                            horizontal: 4,
+                                                            vertical: 2,
+                                                          ),
+                                                      decoration: BoxDecoration(
+                                                        color: Theme.of(context)
+                                                            .colorScheme
+                                                            .surface
+                                                            .withOpacity(0.3),
+                                                        borderRadius:
+                                                            BorderRadius.circular(
+                                                              3,
+                                                            ),
+                                                      ),
+                                                      child: Row(
+                                                        mainAxisSize:
+                                                            MainAxisSize.min,
+                                                        children: [
+                                                          Icon(
+                                                            Icons
+                                                                .picture_as_pdf,
+                                                            size: 9,
+                                                            color: Theme.of(
+                                                                  context,
+                                                                )
+                                                                .colorScheme
+                                                                .onPrimaryContainer
+                                                                .withOpacity(
+                                                                  0.7,
+                                                                ),
+                                                          ),
+                                                          const SizedBox(
+                                                            width: 3,
+                                                          ),
+                                                          Text(
+                                                            '${pdfX.toStringAsFixed(0)},${pdfY.toStringAsFixed(0)}',
+                                                            style: TextStyle(
+                                                              fontSize: 9,
+                                                              fontWeight:
+                                                                  FontWeight
+                                                                      .w600,
+                                                              color: Theme.of(
+                                                                    context,
+                                                                  )
+                                                                  .colorScheme
+                                                                  .onPrimaryContainer
+                                                                  .withOpacity(
+                                                                    0.8,
+                                                                  ),
+                                                            ),
+                                                          ),
+                                                        ],
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        ),
+                                      );
+                                    },
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
-                        );
-                      },
+                      ],
                     ),
                   ),
                 ],
+              )
+              : Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.image_outlined,
+                      size: 80,
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.primary.withOpacity(0.3),
+                    ),
+                    const SizedBox(height: 24),
+                    Text(
+                      'No Image Loaded',
+                      style: Theme.of(context).textTheme.headlineSmall
+                          ?.copyWith(fontWeight: FontWeight.w600),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Load a PDF screenshot to start marking coordinates',
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                    FilledButton.icon(
+                      onPressed: _pickImage,
+                      icon: const Icon(Icons.image_outlined, size: 24),
+                      label: const Text('Open Image'),
+                      style: FilledButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 24,
+                          vertical: 16,
+                        ),
+                        textStyle: const TextStyle(fontSize: 16),
+                      ),
+                    ),
+                  ],
+                ),
               ),
-            ),
-          ],
-        ],
+    );
+  }
+
+  Widget _buildControlCard(
+    BuildContext context, {
+    required String title,
+    required IconData icon,
+    required List<Widget> children,
+  }) {
+    return Card(
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(
+          color: Theme.of(context).colorScheme.outlineVariant,
+          width: 1,
+        ),
       ),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(
+                  icon,
+                  size: 20,
+                  color: Theme.of(context).colorScheme.primary,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  title,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            ...children,
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSwitchRow(
+    BuildContext context,
+    String label,
+    bool value,
+    ValueChanged<bool> onChanged,
+  ) {
+    return Row(
+      children: [
+        Expanded(child: Text(label, style: const TextStyle(fontSize: 13))),
+        Switch(value: value, onChanged: onChanged),
+      ],
+    );
+  }
+
+  Widget _buildInfoRow(
+    BuildContext context,
+    String label,
+    String value,
+    IconData icon,
+  ) {
+    return Row(
+      children: [
+        Icon(icon, size: 16, color: Theme.of(context).colorScheme.primary),
+        const SizedBox(width: 8),
+        Text(
+          '$label:',
+          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Text(
+            value,
+            style: TextStyle(
+              fontSize: 12,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildInputRow(
+    BuildContext context,
+    String label,
+    TextEditingController controller,
+    String hint,
+    ValueChanged<String> onSubmitted,
+  ) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
+        ),
+        const SizedBox(height: 6),
+        TextField(
+          controller: controller,
+          onSubmitted: onSubmitted,
+          keyboardType: TextInputType.number,
+          decoration: InputDecoration(
+            hintText: hint,
+            border: const OutlineInputBorder(),
+            isDense: true,
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 12,
+              vertical: 10,
+            ),
+          ),
+        ),
+      ],
     );
   }
 }
