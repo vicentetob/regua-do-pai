@@ -1,38 +1,1095 @@
 <!DOCTYPE html>
-<html>
+<html lang="pt-BR">
 <head>
-  <!--
-    If you are serving your web app in a path other than the root, change the
-    href value below to reflect the base path you are serving from.
-
-    The path provided below has to start and end with a slash "/" in order for
-    it to work correctly.
-
-    For more details:
-    * https://developer.mozilla.org/en-US/docs/Web/HTML/Element/base
-
-    This is a placeholder for base href that will be replaced by the value of
-    the `--base-href` argument provided to `flutter build`.
-  -->
   <base href="$FLUTTER_BASE_HREF">
 
+  <!-- Meta Tags Essenciais -->
   <meta charset="UTF-8">
-  <meta content="IE=Edge" http-equiv="X-UA-Compatible">
-  <meta name="description" content="A new Flutter project.">
-
-  <!-- iOS meta tags & icons -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  
+  <!-- SEO Meta Tags -->
+  <title>Régua do Papai - Encontre Coordenadas X/Y em PDFs | Ferramenta Grátis para Devs</title>
+  <meta name="description" content="Ferramenta visual gratuita para desenvolvedores encontrarem coordenadas exatas em PDFs. Para pdf-lib, jsPDF, PDFKit. Sem instalação, sem cadastro. Open source.">
+  <meta name="keywords" content="pdf coordinates, pdf-lib, jsPDF, PDFKit, coordenadas pdf, pdf coordinate tool, pdf mapping, developer tools">
+  <meta name="author" content="Tobias Vicente Flores">
+  <meta name="robots" content="index, follow">
+  
+  <!-- Open Graph / Facebook -->
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://reguadopai.web.app/">
+  <meta property="og:title" content="Régua do Papai - Encontre Coordenadas X/Y em PDFs">
+  <meta property="og:description" content="Pare de adivinhar coordenadas. Encontre X/Y exatos em PDFs visualmente. Ferramenta grátis para desenvolvedores.">
+  <meta property="og:image" content="https://reguadopai.web.app/icons/Icon-512.png">
+  
+  <!-- Twitter -->
+  <meta property="twitter:card" content="summary_large_image">
+  <meta property="twitter:url" content="https://reguadopai.web.app/">
+  <meta property="twitter:title" content="Régua do Papai - Encontre Coordenadas X/Y em PDFs">
+  <meta property="twitter:description" content="Pare de adivinhar coordenadas. Encontre X/Y exatos em PDFs visualmente.">
+  <meta property="twitter:image" content="https://reguadopai.web.app/icons/Icon-512.png">
+  
+  <!-- iOS Meta Tags -->
   <meta name="mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black">
-  <meta name="apple-mobile-web-app-title" content="regua">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Régua do Papai">
   <link rel="apple-touch-icon" href="icons/Icon-192.png">
 
   <!-- Favicon -->
-  <link rel="icon" type="image/png" href="favicon.png"/>
-
-  <title>regua</title>
+  <link rel="icon" type="image/png" href="favicon.png">
   <link rel="manifest" href="manifest.json">
+  
+  <!-- Preconnect para Performance -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  
+  <!-- Schema.org Markup -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    "name": "Régua do Papai",
+    "applicationCategory": "DeveloperApplication",
+    "operatingSystem": "Web Browser",
+    "offers": {
+      "@type": "Offer",
+      "price": "0",
+      "priceCurrency": "BRL"
+    },
+    "description": "Ferramenta visual para encontrar coordenadas X/Y em PDFs para desenvolvimento com pdf-lib, jsPDF e PDFKit",
+    "author": {
+      "@type": "Person",
+      "name": "Tobias Vicente Flores",
+      "url": "https://github.com/vicentetob"
+    },
+    "url": "https://reguadopai.web.app",
+    "screenshot": "https://reguadopai.web.app/icons/Icon-512.png"
+  }
+  </script>
+  
+  <style>
+    /* ==================== RESET & BASE ==================== */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    :root {
+      /* Cores */
+      --primary: #2563EB;
+      --primary-dark: #1E40AF;
+      --secondary: #10B981;
+      --accent: #F59E0B;
+      --dark: #1F2937;
+      --gray: #6B7280;
+      --light-gray: #F3F4F6;
+      --white: #FFFFFF;
+      
+      /* Tipografia */
+      --font-main: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      --font-code: 'JetBrains Mono', 'Courier New', monospace;
+      
+      /* Espaçamento */
+      --spacing-xs: 0.5rem;
+      --spacing-sm: 1rem;
+      --spacing-md: 2rem;
+      --spacing-lg: 4rem;
+      --spacing-xl: 6rem;
+      
+      /* Transições */
+      --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    
+    html {
+      scroll-behavior: smooth;
+      font-size: 16px;
+    }
+    
+    body {
+      font-family: var(--font-main);
+      line-height: 1.6;
+      color: var(--dark);
+      background: var(--white);
+      overflow-x: hidden;
+    }
+    
+    /* ==================== TYPOGRAPHY ==================== */
+    h1, h2, h3, h4 {
+      font-weight: 800;
+      line-height: 1.2;
+      margin-bottom: var(--spacing-sm);
+    }
+    
+    h1 {
+      font-size: clamp(2rem, 5vw, 3.5rem);
+      background: linear-gradient(135deg, var(--primary), var(--secondary));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    
+    h2 {
+      font-size: clamp(1.75rem, 4vw, 2.5rem);
+      color: var(--dark);
+    }
+    
+    h3 {
+      font-size: clamp(1.25rem, 3vw, 1.75rem);
+      color: var(--dark);
+    }
+    
+    p {
+      font-size: clamp(1rem, 2vw, 1.125rem);
+      color: var(--gray);
+      margin-bottom: var(--spacing-sm);
+    }
+    
+    /* ==================== BUTTONS ==================== */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 1rem 2rem;
+      font-size: 1.125rem;
+      font-weight: 700;
+      text-decoration: none;
+      border-radius: 12px;
+      cursor: pointer;
+      border: none;
+      transition: var(--transition);
+      font-family: var(--font-main);
+    }
+    
+    .btn-primary {
+      background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+      color: var(--white);
+      box-shadow: 0 10px 30px rgba(37, 99, 235, 0.3);
+    }
+    
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 15px 40px rgba(37, 99, 235, 0.4);
+    }
+    
+    .btn-secondary {
+      background: transparent;
+      color: var(--primary);
+      border: 2px solid var(--primary);
+    }
+    
+    .btn-secondary:hover {
+      background: var(--primary);
+      color: var(--white);
+    }
+    
+    /* ==================== CONTAINER ==================== */
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 var(--spacing-md);
+    }
+    
+    section {
+      padding: var(--spacing-xl) 0;
+    }
+    
+    /* ==================== HEADER ==================== */
+    header {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(10px);
+      box-shadow: 0 2px 20px rgba(0, 0, 0, 0.05);
+      z-index: 1000;
+      padding: 1rem 0;
+    }
+    
+    nav {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    
+    .logo {
+      font-size: 1.5rem;
+      font-weight: 800;
+      color: var(--primary);
+      text-decoration: none;
+    }
+    
+    .nav-links {
+      display: flex;
+      gap: 2rem;
+      list-style: none;
+    }
+    
+    .nav-links a {
+      color: var(--dark);
+      text-decoration: none;
+      font-weight: 600;
+      transition: var(--transition);
+    }
+    
+    .nav-links a:hover {
+      color: var(--primary);
+    }
+    
+    /* ==================== HERO SECTION ==================== */
+    #hero {
+      padding-top: calc(var(--spacing-xl) + 80px);
+      background: linear-gradient(135deg, #EEF2FF 0%, #F3F4F6 100%);
+      position: relative;
+      overflow: hidden;
+    }
+    
+    #hero::before {
+      content: '';
+      position: absolute;
+      top: -50%;
+      right: -10%;
+      width: 600px;
+      height: 600px;
+      background: radial-gradient(circle, rgba(37, 99, 235, 0.1) 0%, transparent 70%);
+      border-radius: 50%;
+    }
+    
+    .hero-content {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: var(--spacing-lg);
+      align-items: center;
+    }
+    
+    .hero-text {
+      z-index: 1;
+    }
+    
+    .hero-text .subtitle {
+      font-size: 1.25rem;
+      color: var(--gray);
+      margin-bottom: var(--spacing-md);
+    }
+    
+    .hero-cta {
+      display: flex;
+      gap: var(--spacing-sm);
+      margin-top: var(--spacing-md);
+      flex-wrap: wrap;
+    }
+    
+    .hero-visual {
+      position: relative;
+      z-index: 1;
+    }
+    
+    .hero-placeholder {
+      background: var(--white);
+      border-radius: 20px;
+      padding: var(--spacing-md);
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.1);
+      border: 1px solid rgba(37, 99, 235, 0.1);
+    }
+    
+    .mockup {
+      width: 100%;
+      aspect-ratio: 16/10;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-size: 1.5rem;
+      font-weight: 700;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .mockup::before {
+      content: '🧭';
+      font-size: 5rem;
+      opacity: 0.3;
+      position: absolute;
+    }
+    
+    .social-proof {
+      margin-top: var(--spacing-md);
+      display: flex;
+      align-items: center;
+      gap: var(--spacing-sm);
+      color: var(--gray);
+      font-size: 0.9rem;
+    }
+    
+    /* ==================== PROBLEM SECTION ==================== */
+    #problema {
+      background: var(--white);
+    }
+    
+    .problem-list {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: var(--spacing-md);
+      margin-top: var(--spacing-md);
+    }
+    
+    .problem-item {
+      background: var(--light-gray);
+      padding: var(--spacing-md);
+      border-radius: 16px;
+      border-left: 4px solid #EF4444;
+    }
+    
+    .problem-item h3 {
+      font-size: 1.125rem;
+      color: #EF4444;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    
+    /* ==================== SOLUTION SECTION ==================== */
+    #solucao {
+      background: var(--light-gray);
+    }
+    
+    .steps {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: var(--spacing-md);
+      margin-top: var(--spacing-lg);
+    }
+    
+    .step {
+      background: var(--white);
+      padding: var(--spacing-md);
+      border-radius: 20px;
+      text-align: center;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+      transition: var(--transition);
+    }
+    
+    .step:hover {
+      transform: translateY(-8px);
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+    }
+    
+    .step-icon {
+      font-size: 4rem;
+      margin-bottom: var(--spacing-sm);
+    }
+    
+    .step h3 {
+      color: var(--primary);
+      margin-bottom: var(--spacing-xs);
+    }
+    
+    /* ==================== FEATURES SECTION ==================== */
+    #features {
+      background: var(--white);
+    }
+    
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: var(--spacing-md);
+      margin-top: var(--spacing-lg);
+    }
+    
+    .feature-card {
+      background: linear-gradient(135deg, #f6f8fb 0%, #ffffff 100%);
+      padding: var(--spacing-md);
+      border-radius: 20px;
+      border: 1px solid rgba(37, 99, 235, 0.1);
+      transition: var(--transition);
+    }
+    
+    .feature-card:hover {
+      border-color: var(--primary);
+      box-shadow: 0 10px 40px rgba(37, 99, 235, 0.15);
+      transform: translateY(-4px);
+    }
+    
+    .feature-icon {
+      font-size: 3rem;
+      margin-bottom: var(--spacing-sm);
+    }
+    
+    /* ==================== CODE DEMO SECTION ==================== */
+    #demo {
+      background: var(--dark);
+      color: var(--white);
+    }
+    
+    #demo h2,
+    #demo p {
+      color: var(--white);
+    }
+    
+    .code-comparison {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: var(--spacing-md);
+      margin-top: var(--spacing-lg);
+    }
+    
+    .code-block {
+      background: #0D1117;
+      border-radius: 16px;
+      padding: var(--spacing-md);
+      overflow-x: auto;
+    }
+    
+    .code-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: var(--spacing-sm);
+      padding-bottom: var(--spacing-sm);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    
+    .code-label {
+      font-weight: 700;
+      font-size: 0.9rem;
+    }
+    
+    .code-label.before {
+      color: #EF4444;
+    }
+    
+    .code-label.after {
+      color: var(--secondary);
+    }
+    
+    pre {
+      font-family: var(--font-code);
+      font-size: 0.9rem;
+      line-height: 1.6;
+      margin: 0;
+    }
+    
+    code {
+      color: #E5E7EB;
+    }
+    
+    .comment {
+      color: #6B7280;
+    }
+    
+    .string {
+      color: #A78BFA;
+    }
+    
+    .number {
+      color: #F59E0B;
+    }
+    
+    /* ==================== TARGET AUDIENCE ==================== */
+    #publico {
+      background: var(--light-gray);
+    }
+    
+    .audience-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: var(--spacing-md);
+      margin-top: var(--spacing-lg);
+    }
+    
+    .audience-card {
+      background: var(--white);
+      padding: var(--spacing-md);
+      border-radius: 16px;
+      text-align: center;
+      box-shadow: 0 5px 20px rgba(0, 0, 0, 0.05);
+    }
+    
+    .audience-emoji {
+      font-size: 3.5rem;
+      margin-bottom: var(--spacing-sm);
+    }
+    
+    /* ==================== FAQ SECTION ==================== */
+    #faq {
+      background: var(--white);
+    }
+    
+    .faq-list {
+      max-width: 800px;
+      margin: var(--spacing-lg) auto 0;
+    }
+    
+    .faq-item {
+      background: var(--light-gray);
+      padding: var(--spacing-md);
+      border-radius: 12px;
+      margin-bottom: var(--spacing-sm);
+    }
+    
+    .faq-question {
+      font-weight: 700;
+      color: var(--dark);
+      margin-bottom: var(--spacing-xs);
+      font-size: 1.125rem;
+    }
+    
+    .faq-answer {
+      color: var(--gray);
+      margin: 0;
+    }
+    
+    /* ==================== OPENSOURCE SECTION ==================== */
+    #opensource {
+      background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+      color: var(--white);
+      text-align: center;
+    }
+    
+    #opensource h2,
+    #opensource p {
+      color: var(--white);
+    }
+    
+    .github-stats {
+      display: flex;
+      justify-content: center;
+      gap: var(--spacing-md);
+      margin-top: var(--spacing-md);
+      flex-wrap: wrap;
+    }
+    
+    .stat-badge {
+      background: rgba(255, 255, 255, 0.15);
+      backdrop-filter: blur(10px);
+      padding: var(--spacing-sm) var(--spacing-md);
+      border-radius: 12px;
+      font-weight: 600;
+    }
+    
+    /* ==================== CTA FINAL ==================== */
+    #cta-final {
+      background: var(--light-gray);
+      text-align: center;
+    }
+    
+    #cta-final .subtitle {
+      font-size: 1.125rem;
+      color: var(--gray);
+      margin-top: var(--spacing-sm);
+    }
+    
+    /* ==================== FOOTER ==================== */
+    footer {
+      background: var(--dark);
+      color: var(--white);
+      padding: var(--spacing-lg) 0 var(--spacing-md);
+      text-align: center;
+    }
+    
+    .footer-content {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: var(--spacing-md);
+    }
+    
+    .footer-links {
+      display: flex;
+      gap: var(--spacing-md);
+      list-style: none;
+      flex-wrap: wrap;
+    }
+    
+    .footer-links a {
+      color: var(--white);
+      text-decoration: none;
+      transition: var(--transition);
+    }
+    
+    .footer-links a:hover {
+      color: var(--primary);
+    }
+    
+    .footer-credit {
+      font-size: 0.9rem;
+      opacity: 0.8;
+    }
+    
+    /* ==================== RESPONSIVE ==================== */
+    @media (max-width: 768px) {
+      :root {
+        --spacing-lg: 3rem;
+        --spacing-xl: 4rem;
+      }
+      
+      .hero-content,
+      .code-comparison {
+        grid-template-columns: 1fr;
+      }
+      
+      .nav-links {
+        display: none;
+      }
+      
+      .hero-cta {
+        flex-direction: column;
+      }
+      
+      .btn {
+        width: 100%;
+        justify-content: center;
+      }
+    }
+    
+    /* ==================== ANIMATIONS ==================== */
+    @keyframes fadeInUp {
+      from {
+        opacity: 0;
+        transform: translateY(30px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+    
+    .animate-on-scroll {
+      animation: fadeInUp 0.8s ease-out;
+    }
+  </style>
 </head>
 <body>
-  <script src="flutter_bootstrap.js" async></script>
+  
+  <!-- ==================== HEADER ==================== -->
+  <header>
+    <nav class="container">
+      <a href="#" class="logo">🧭 Régua do Papai</a>
+      <ul class="nav-links">
+        <li><a href="#features">Recursos</a></li>
+        <li><a href="#demo">Demo</a></li>
+        <li><a href="#faq">FAQ</a></li>
+        <li><a href="https://github.com/vicentetob/regua-do-pai" target="_blank">GitHub</a></li>
+      </ul>
+    </nav>
+  </header>
+  
+  <!-- ==================== HERO SECTION ==================== -->
+  <section id="hero">
+    <div class="container">
+      <div class="hero-content">
+        <div class="hero-text">
+          <h1>Pare de adivinhar coordenadas. Encontre X/Y exatos em PDFs visualmente.</h1>
+          <p class="subtitle">Ferramenta gratuita para desenvolvedores que trabalham com <strong>pdf-lib</strong>, <strong>jsPDF</strong>, <strong>PDFKit</strong> e <strong>Flutter PDF</strong></p>
+          
+          <div class="hero-cta">
+            <a href="#app" class="btn btn-primary">🚀 Abrir Ferramenta Grátis</a>
+            <a href="https://github.com/vicentetob/regua-do-pai" target="_blank" class="btn btn-secondary">⭐ Ver no GitHub</a>
+          </div>
+          
+          <div class="social-proof">
+            <span>✨</span>
+            <span>Usado por desenvolvedores em 20+ países</span>
+          </div>
+        </div>
+        
+        <div class="hero-visual">
+          <div class="hero-placeholder">
+            <div class="mockup">
+              <span>Screenshot da<br>Ferramenta em Ação</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+  
+  <!-- ==================== PROBLEMA ==================== -->
+  <section id="problema">
+    <div class="container">
+      <h2 style="text-align: center;">Cansado de ficar tentando e errando coordenadas no seu código?</h2>
+      <p style="text-align: center; max-width: 700px; margin: 0 auto var(--spacing-lg);">
+        Todo dev que trabalha com PDFs já passou por isso:
+      </p>
+      
+      <div class="problem-list">
+        <div class="problem-item">
+          <h3>❌ Trial-and-Error Infinito</h3>
+          <p>Ajustar valores de X/Y dezenas de vezes até alinhar</p>
+        </div>
+        
+        <div class="problem-item">
+          <h3>❌ Ciclo Lento</h3>
+          <p>Debugar → Gerar PDF → Abrir → Ajustar → Repetir 50x</p>
+        </div>
+        
+        <div class="problem-item">
+          <h3>❌ Tempo Perdido</h3>
+          <p>Horas em algo que deveria levar minutos</p>
+        </div>
+        
+        <div class="problem-item">
+          <h3>❌ Matemática Manual</h3>
+          <p>Calcular conversão de sistemas de coordenadas invertidos</p>
+        </div>
+      </div>
+    </div>
+  </section>
+  
+  <!-- ==================== SOLUÇÃO ==================== -->
+  <section id="solucao">
+    <div class="container">
+      <h2 style="text-align: center;">Com a Régua do Papai, você simplesmente...</h2>
+      
+      <div class="steps">
+        <div class="step">
+          <div class="step-icon">📤</div>
+          <h3>1. Upload</h3>
+          <p>Arrasta o screenshot do seu PDF para dentro da ferramenta</p>
+        </div>
+        
+        <div class="step">
+          <div class="step-icon">🎯</div>
+          <h3>2. Marca</h3>
+          <p>Clica nos pontos onde quer posicionar textos, imagens ou campos</p>
+        </div>
+        
+        <div class="step">
+          <div class="step-icon">📋</div>
+          <h3>3. Copia</h3>
+          <p>Copia as coordenadas X/Y prontas para colar no seu código</p>
+        </div>
+      </div>
+    </div>
+  </section>
+  
+  <!-- ==================== FEATURES ==================== -->
+  <section id="features">
+    <div class="container">
+      <h2 style="text-align: center;">Recursos que vão te salvar horas</h2>
+      
+      <div class="features-grid">
+        <div class="feature-card">
+          <div class="feature-icon">🧭</div>
+          <h3>Coordenadas Instantâneas</h3>
+          <p>Hover sobre o PDF e veja X/Y em tempo real. Simples assim.</p>
+        </div>
+        
+        <div class="feature-card">
+          <div class="feature-icon">📏</div>
+          <h3>Grid & Snap</h3>
+          <p>Guias ajustáveis e snap para precisão milimétrica no posicionamento.</p>
+        </div>
+        
+        <div class="feature-card">
+          <div class="feature-icon">💾</div>
+          <h3>Export JSON</h3>
+          <p>Salva todos os pontos marcados em JSON pronto para usar no código.</p>
+        </div>
+        
+        <div class="feature-card">
+          <div class="feature-icon">🔄</div>
+          <h3>Multi-biblioteca</h3>
+          <p>Funciona com pdf-lib, jsPDF, PDFKit e Flutter PDF.</p>
+        </div>
+        
+        <div class="feature-card">
+          <div class="feature-icon">⚡</div>
+          <h3>Zero Instalação</h3>
+          <p>Roda direto no navegador. Sem downloads, sem setup.</p>
+        </div>
+        
+        <div class="feature-card">
+          <div class="feature-icon">🆓</div>
+          <h3>Totalmente Grátis</h3>
+          <p>Open source, sem login, sem paywall. Use à vontade.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+  
+  <!-- ==================== CODE DEMO ==================== -->
+  <section id="demo">
+    <div class="container">
+      <h2 style="text-align: center;">Veja a diferença na prática</h2>
+      <p style="text-align: center; max-width: 700px; margin: 0 auto;">
+        Compare o antes e depois de usar a Régua do Papai:
+      </p>
+      
+      <div class="code-comparison">
+        <div class="code-block">
+          <div class="code-header">
+            <span class="code-label before">❌ Antes (tentativa e erro)</span>
+          </div>
+          <pre><code><span class="comment">// Tentativa 1</span>
+page.drawText(<span class="string">"Nome"</span>, {
+  x: <span class="number">100</span>,
+  y: <span class="number">400</span>
+}); <span class="comment">// não tá alinhando...</span>
+
+<span class="comment">// Tentativa 2</span>
+page.drawText(<span class="string">"Nome"</span>, {
+  x: <span class="number">120</span>,
+  y: <span class="number">380</span>
+}); <span class="comment">// ainda errado</span>
+
+<span class="comment">// Tentativa 3</span>
+page.drawText(<span class="string">"Nome"</span>, {
+  x: <span class="number">152</span>,
+  y: <span class="number">473</span>
+}); <span class="comment">// finalmente! 😭</span></code></pre>
+        </div>
+        
+        <div class="code-block">
+          <div class="code-header">
+            <span class="code-label after">✅ Depois (com Régua do Papai)</span>
+          </div>
+          <pre><code><span class="comment">// Primeiro try! 🎯</span>
+page.drawText(<span class="string">"Nome"</span>, {
+  x: <span class="number">152</span>,
+  y: <span class="number">473</span>
+});
+
+<span class="comment">// Campos adicionais</span>
+page.drawText(<span class="string">"Email"</span>, {
+  x: <span class="number">152</span>,
+  y: <span class="number">445</span>
+});
+
+page.drawText(<span class="string">"Telefone"</span>, {
+  x: <span class="number">152</span>,
+  y: <span class="number">417</span>
+});</code></pre>
+        </div>
+      </div>
+    </div>
+  </section>
+  
+  <!-- ==================== TARGET AUDIENCE ==================== -->
+  <section id="publico">
+    <div class="container">
+      <h2 style="text-align: center;">Feito para desenvolvedores como você</h2>
+      
+      <div class="audience-grid">
+        <div class="audience-card">
+          <div class="audience-emoji">👨‍💻</div>
+          <h3>Dev Backend</h3>
+          <p>Gerando certificados e relatórios automatizados</p>
+        </div>
+        
+        <div class="audience-card">
+          <div class="audience-emoji">🎨</div>
+          <h3>Dev Fullstack</h3>
+          <p>Preenchendo formulários PDF dinamicamente</p>
+        </div>
+        
+        <div class="audience-card">
+          <div class="audience-emoji">🏢</div>
+          <h3>Dev Corporativo</h3>
+          <p>Trabalhando com templates de documentos</p>
+        </div>
+        
+        <div class="audience-card">
+          <div class="audience-emoji">🚀</div>
+          <h3>Indie Hacker</h3>
+          <p>Criando ferramentas SaaS com PDFs</p>
+        </div>
+      </div>
+    </div>
+  </section>
+  
+  <!-- ==================== FAQ ==================== -->
+  <section id="faq">
+    <div class="container">
+      <h2 style="text-align: center;">Perguntas Frequentes</h2>
+      
+      <div class="faq-list">
+        <div class="faq-item">
+          <div class="faq-question">💰 É realmente grátis?</div>
+          <p class="faq-answer">Sim! 100% gratuito e open source sob licença MIT. Use comercialmente sem restrições.</p>
+        </div>
+        
+        <div class="faq-item">
+          <div class="faq-question">📥 Precisa instalar algo?</div>
+          <p class="faq-answer">Não. A ferramenta roda completamente no navegador. Sem downloads, sem instalação.</p>
+        </div>
+        
+        <div class="faq-item">
+          <div class="faq-question">🔧 Funciona com qualquer biblioteca PDF?</div>
+          <p class="faq-answer">Sim! As coordenadas são universais e funcionam com pdf-lib, jsPDF, PDFKit, Flutter PDF e qualquer outra.</p>
+        </div>
+        
+        <div class="faq-item">
+          <div class="faq-question">🔒 Meus PDFs ficam no servidor?</div>
+          <p class="faq-answer">Não. Todo o processamento é feito localmente no seu navegador. Seus arquivos não saem do seu computador.</p>
+        </div>
+        
+        <div class="faq-item">
+          <div class="faq-question">💼 Posso usar comercialmente?</div>
+          <p class="faq-answer">Sim! Licença MIT permite uso comercial sem restrições. Apenas dê os créditos ao autor.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+  
+  <!-- ==================== OPENSOURCE ==================== -->
+  <section id="opensource">
+    <div class="container">
+      <h2>100% Open Source</h2>
+      <p>Código aberto no GitHub. Contribuições são bem-vindas!</p>
+      
+      <div class="github-stats">
+        <div class="stat-badge">⭐ Gratuito e Open Source</div>
+        <div class="stat-badge">📜 Licença MIT</div>
+        <div class="stat-badge">🇧🇷 Made in Brazil</div>
+      </div>
+      
+      <div style="margin-top: var(--spacing-md);">
+        <a href="https://github.com/vicentetob/regua-do-pai" target="_blank" class="btn btn-primary" style="background: white; color: var(--primary);">
+          Ver no GitHub →
+        </a>
+      </div>
+    </div>
+  </section>
+  
+  <!-- ==================== CTA FINAL ==================== -->
+  <section id="cta-final">
+    <div class="container">
+      <h2>Pare de perder tempo. Comece agora.</h2>
+      <p class="subtitle">Sem cadastro. Sem instalação. Sem enrolação.</p>
+      
+      <div style="margin-top: var(--spacing-md);">
+        <a href="#app" class="btn btn-primary" style="font-size: 1.25rem; padding: 1.25rem 3rem;">
+          🚀 Abrir Régua do Papai Grátis
+        </a>
+      </div>
+    </div>
+  </section>
+  
+  <!-- ==================== FOOTER ==================== -->
+  <footer>
+    <div class="container">
+      <div class="footer-content">
+        <div class="logo" style="color: white; font-size: 2rem;">🧭 Régua do Papai</div>
+        
+        <ul class="footer-links">
+          <li><a href="https://github.com/vicentetob/regua-do-pai" target="_blank">GitHub</a></li>
+          <li><a href="https://github.com/vicentetob" target="_blank">Autor</a></li>
+          <li><a href="#faq">FAQ</a></li>
+          <li><a href="mailto:contato@example.com">Contato</a></li>
+        </ul>
+        
+        <div class="footer-credit">
+          <p>Feito com ❤️ por <strong>Tobias Vicente Flores</strong></p>
+          <p>Sapucaia do Sul, Brasil 🇧🇷</p>
+          <p style="margin-top: var(--spacing-sm); opacity: 0.7;">
+            © 2025 Régua do Papai | Licença MIT | Empowering developers to build smarter tools
+          </p>
+        </div>
+      </div>
+    </div>
+  </footer>
+  
+  <!-- ==================== SCRIPTS ==================== -->
+  <script>
+    let flutterLoaded = false;
+    
+    // Função para carregar o Flutter
+    function loadFlutterApp() {
+      if (flutterLoaded) return;
+      
+      flutterLoaded = true;
+      
+      // Remove todo conteúdo da landing page
+      document.body.innerHTML = `
+        <style>
+          body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            background: white;
+            font-family: 'Inter', sans-serif;
+          }
+          .loading-container {
+            text-align: center;
+          }
+          .loading-icon {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+            animation: pulse 2s ease-in-out infinite;
+          }
+          .loading-text {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #2563EB;
+          }
+          @keyframes pulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.7; transform: scale(1.1); }
+          }
+        </style>
+        <div class="loading-container">
+          <div class="loading-icon">🧭</div>
+          <div class="loading-text">Carregando Régua do Papai...</div>
+        </div>
+      `;
+      
+      // Carrega o Flutter
+      const script = document.createElement('script');
+      script.src = 'flutter_bootstrap.js';
+      script.async = false;
+      document.body.appendChild(script);
+    }
+    
+    // Scroll suave para âncoras
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+      anchor.addEventListener('click', function (e) {
+        const href = this.getAttribute('href');
+        
+        if (href === '#app') {
+          e.preventDefault();
+          loadFlutterApp();
+          return;
+        }
+        
+        e.preventDefault();
+        const target = document.querySelector(href);
+        if (target) {
+          target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      });
+    });
+    
+    // Animação on scroll (simples)
+    const observerOptions = {
+      threshold: 0.1,
+      rootMargin: '0px 0px -100px 0px'
+    };
+    
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('animate-on-scroll');
+        }
+      });
+    }, observerOptions);
+    
+    document.querySelectorAll('section').forEach(section => {
+      observer.observe(section);
+    });
+  </script>
+  
 </body>
 </html>
