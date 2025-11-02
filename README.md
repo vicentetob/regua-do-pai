@@ -1,9 +1,14 @@
 # 🧭 The Father's Ruler (Régua do Pai)
 
-**A free visual tool for developers to find X/Y coordinates inside PDFs and images.**  
-Built with **Flutter Web** by [Tobias Vicente Flores](https://github.com/vicentetob).
+[![Firebase Hosting](https://img.shields.io/badge/hosting-firebase-orange?logo=firebase)](https://regua-do-pai.web.app)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![Made with Flutter](https://img.shields.io/badge/Made%20with-Flutter-blue?logo=flutter)](https://flutter.dev)
+[![Open Source](https://img.shields.io/badge/Open%20Source-💚-brightgreen)](https://github.com/vicentetob/regua-do-pai)
 
-🌐 [Open the Live Tool](https://reguadopai.web.app)  
+**A free visual tool for developers to find X/Y coordinates inside PDFs and images.**  
+Built with **Flutter Web** by [Tobias Vicente Flores](https://github.com/vicentetob) — founder of [GreenWatt Renováveis](https://gw.solar).
+
+🌐 [Open the Live Tool](https://regua-do-pai.web.app)  
 📦 [View the Source Code](https://github.com/vicentetob/regua-do-pai)
 
 ---
@@ -11,100 +16,93 @@ Built with **Flutter Web** by [Tobias Vicente Flores](https://github.com/vicente
 ## 🚀 Overview
 
 The **Father's Ruler** helps developers working with libraries like  
-[`pdf-lib`](https://pdf-lib.js.org/), `jsPDF`, or `PDFKit` to easily find  
-exact coordinates for text, images, and shapes within PDF templates.
+[`pdf-lib`](https://pdf-lib.js.org/), [`jsPDF`](https://github.com/parallax/jsPDF), or [`PDFKit`](https://pdfkit.org/)  
+to easily find exact coordinates for text, images, and shapes within PDF templates.
 
-No more trial-and-error — just hover your mouse and copy the coordinates.
+No more trial-and-error — just hover your mouse and copy the coordinates.  
+Created as a developer productivity tool and shared freely with the community.
 
 ---
 
 ## ✨ Features
 
-- 🧭 **Instant Coordinates:** Get X/Y values by simply hovering over the PDF or image.  
-- 📏 **Grid & Snap Options:** Adjustable grid size and snapping for precision placement.  
+- 🧭 **Instant Coordinates:** Get X/Y values by hovering over the PDF or image.  
+- 📏 **Grid & Snap Options:** Adjustable grid size and snapping for precision.  
 - ⚙️ **JSON Export:** Save all marked points in a ready-to-use format for your code.  
 - 💻 **Cross-Compatible:** Works with pdf-lib, jsPDF, PDFKit, and Flutter PDF libraries.  
-- ⚡ **Runs in the Browser:** No installation, no login, just open and use.
+- ⚡ **Runs in the Browser:** No installation, no login, just open and use.  
+- 🧩 **Multi-Platform:** Works on mobile, tablet, and desktop browsers.
 
 ---
 
 ## 📘 PDF Coordinate Inspector
 
-A visual tool for inspecting and measuring coordinates on an image (screenshot of a PDF)
-and obtaining their corresponding positions in the PDF coordinate system.
-Perfect for mapping fields in document generation templates.
+A visual inspector to find coordinates on screenshots of PDFs and map them to their equivalent PDF coordinates.  
+Perfect for positioning text fields or images dynamically in document-generation templates.
 
 ### 🧩 Overview
 
-1. Upload a screenshot of a PDF page.
-2. Adjust the target PDF dimensions (W/H) — scaling (X and Y) is auto-calculated.
-3. Mark points with quick clicks (name each field), pan/zoom with drag or pinch.
-4. Copy PDF coordinates, export/import JSON with all markers.
-5. Configurable grid with optional snap for alignment.
+1. Upload a screenshot of a PDF page.  
+2. Adjust the target PDF dimensions (W/H) — scales auto-calculate.  
+3. Mark points and name fields with quick clicks.  
+4. Copy or export coordinates to JSON.  
+5. Import JSON to restore markers anytime.
 
-### 🪄 Main Features
+---
 
-- Grid with main lines every 5 steps (better visibility).
-- High-contrast crosshair cursor with center dot.
-- Readable labels over each marker.
-- Compact marker list at the bottom with copy/delete shortcuts.
-- Delete individually, by right-click near a point, or via "Clear All".
+## 🪄 Main Features
 
-### 🧭 How to Use
+- Grid with adjustable spacing and optional snapping.  
+- Crosshair cursor with central dot and live coordinate display.  
+- Named markers with color-coded dots and label overlays.  
+- Compact marker list with copy/delete shortcuts.  
+- Support for right-click delete and full "Clear All" wipe.  
+- Real-time px ↔ pt coordinate conversion (image vs. PDF).
 
-#### Open an Image
+---
 
-Click the image icon in the AppBar and select a screenshot (PNG/JPG/WebP).
+## 🧭 How to Use
 
-#### Adjust PDF Dimensions
+#### 1️⃣ Open an Image
+Click the “Open Image” icon and select a screenshot of your PDF (PNG/JPG/WebP).
 
-In the top panel, fill W and H (points) matching your PDF document.
-Scale X/Y updates automatically for px → pt conversion.
+#### 2️⃣ Adjust PDF Dimensions
+In the left panel, fill the PDF Width and Height (in points).  
+The scale factors for X/Y are automatically recalculated.
 
-#### Grid and Snap
+#### 3️⃣ Use the Grid
+Enable “Show Grid” and adjust “Step” for spacing.  
+Activate “Snap to Grid” for precision alignment.
 
-- Enable "Grid" and adjust "Step".
-- Enable "Snap" for step-multiple precision.
+#### 4️⃣ Mark Points
+Quick click → opens dialog to name the field.  
+Drag for panning (does not create markers).
 
-#### Mark Points
+#### 5️⃣ Copy / Export / Import
+Export JSON of all markers, or import back to restore.
 
-- Quick click (<500 ms and <10 px movement) opens "Field name" dialog.
-- Drag for navigation — won't open dialog.
-- You can also use the "Mark" button on the top bar.
+---
 
-#### Copy / Export / Import
-
-- Each marker card has a copy icon for {x, y} in PDF coordinates.
-- AppBar icons let you Export (JSON) or Import marker files.
-
-#### Delete Markers
-
-- Trash icon on card.
-- Right-click near a point (~12 px radius).
-- "Clear All" button removes all markers.
-
-### 📐 Coordinate System & Conversion
+## 📐 Coordinate System & Conversion
 
 | System | Origin | Unit |
 |--------|--------|------|
 | Image  | Top-left | px |
 | PDF    | Bottom-left | pt |
 
-**Scales:**
-```
+**Scale Calculation**
+```text
 scaleX = pdfWidth / imageWidth
 scaleY = pdfHeight / imageHeight
-```
+Conversion
 
-**Conversion:**
-```
+text
+Copiar código
 pdfX = imageX * scaleX
 pdfY = pdfHeight - (imageY * scaleY)
-```
-
-### 🧾 Example JSON Output
-
-```json
+🧾 Example JSON Output
+json
+Copiar código
 {
   "meta": {
     "imageWidth": 1654,
@@ -122,78 +120,69 @@ pdfY = pdfHeight - (imageY * scaleY)
     }
   }
 }
-```
+🖱️ Controls & Gestures
+Action	Description
+Zoom	Pinch or Ctrl + Scroll
+Pan	Click and Drag
+Mark	Quick Click (<500ms)
+Remove	Right-click near marker
+Clear All	Deletes all markers
 
-### 🖱️ Controls & Gestures
+🧑‍💻 Example Usage (pdf-lib)
+js
+Copiar código
+import { PDFDocument, StandardFonts, rgb } from 'pdf-lib';
 
-| Action | Description |
-|--------|-------------|
-| Zoom | Pinch (touchpad) or Ctrl + scroll |
-| Pan | Click and drag |
-| Mark | Quick click (<500 ms) |
-| Remove | Right-click near marker |
-
----
-
-## 🧑‍💻 Example Usage
-
-```js
-// Example using pdf-lib
+const pdfDoc = await PDFDocument.create();
+const page = pdfDoc.addPage();
 page.drawText("Hello World!", {
   x: 152,
   y: 473,
 });
-```
+🛠️ Build & Run
+Requires: Flutter 3.x configured and updated.
 
----
-
-## 🛠️ Build & Run
-
-Requires: Flutter 3.x installed and configured.
-
-### Web (Chrome)
-```bash
-flutter run -d chrome
-```
-
-### Windows Desktop
-```bash
+Web (Recommended)
+bash
+Copiar código
+flutter build web --release
+firebase deploy --only hosting
+Windows
+bash
+Copiar código
 flutter config --enable-windows-desktop
 flutter run -d windows
-```
-
-### Android (Optional)
-```bash
+Android
+bash
+Copiar código
 flutter run -d android
-```
+🧩 Code Structure
+File	Description
+lib/main.dart	Main UI logic (CoordInspectorApp, CoordHome)
+MarkerPoint	Marker model with px ↔ pt conversion
+_CanvasPainter	Handles drawing grid, crosshair, and markers
+Logic	Import/export JSON, click vs drag detection, delete, etc.
 
-💡 For production, run `flutter build web` and host the `build/web` folder.
+🧰 Troubleshooting
+PDF bottom hidden: Use zoom-out or drag the view.
 
----
+Dialog opens on drag: Only short clicks (<500ms & <10px) create markers.
 
-## 🧩 Code Structure
+Wrong coordinates: Ensure the entered PDF width/height matches the actual document.
 
-| File | Description |
-|------|-------------|
-| `lib/main.dart` | Main UI and state (CoordInspectorApp, CoordHome) |
-| MarkerPoint | Marker model |
-| _CanvasPainter | Draws image, grid, crosshair, and markers |
-| Logic | Handles JSON import/export, click vs drag, deletion, and "clear all" |
+Grid not visible: Try resetting grid size to 10px.
 
----
+💡 About the Project
+The Régua do Pai was created by Tobias Vicente Flores, founder of GreenWatt Renováveis,
+as part of the Papai Solar Ecosystem — tools designed to empower engineers, technicians,
+and creators with intelligent, open-source technology.
 
-## 🧰 Troubleshooting
+It embodies the philosophy that knowledge and progress should be shared,
+so everyone can build better tools, faster, and with purpose. ⚡
 
-- **Bottom of PDF not visible:** Use zoom out or drag down — workspace has extra margin.
-- **Dialog opens while dragging:** Only quick clicks (<500 ms and <10 px) trigger dialogs.
-- **Mismatched coordinates:** Ensure PDF W/H match the real PDF dimensions (points).
-
----
-
-## 🪪 License
-
-MIT License © 2025 Tobias Vicente Flores  
+🪪 License
+MIT License © 2025 Tobias Vicente Flores
 Free for personal and commercial use — just credit the author.
 
-Created with ❤️ by Tobias Vicente Flores — Sapucaia do Sul, Brazil.  
+Created with ❤️ by Tobias Vicente Flores — Sapucaia do Sul, Brazil.
 Empowering developers to build smarter tools.
