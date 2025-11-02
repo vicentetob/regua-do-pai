@@ -42,6 +42,9 @@ class _CoordHomeState extends State<CoordHome> {
   final _ivController = TransformationController();
   final _pdfWController = TextEditingController();
   final _pdfHController = TextEditingController();
+  final _gotoXController = TextEditingController();
+  final _gotoYController = TextEditingController();
+  bool _gotoIsPdf = false; // false = imagem (px), true = PDF (pt)
 
   // UI / estado
   bool _showGrid = true;
@@ -63,6 +66,7 @@ class _CoordHomeState extends State<CoordHome> {
   double get _imgH => _img?.height.toDouble() ?? 0;
   double get _pageW => _pdfW ?? _imgW;
   double get _pageH => _pdfH ?? _imgH;
+  Size _viewportSize = Size.zero; // área visível do viewer
 
   // Conversão imagem->PDF (mantendo proporção por eixos)
   double get _scaleX => _imgW == 0 ? 1 : _pageW / _imgW;
@@ -72,8 +76,39 @@ class _CoordHomeState extends State<CoordHome> {
   void dispose() {
     _pdfWController.dispose();
     _pdfHController.dispose();
+    _gotoXController.dispose();
+    _gotoYController.dispose();
     _ivController.dispose();
     super.dispose();
+  }
+
+  void _goTo(Offset sceneTarget) {
+    if (_img == null) return;
+    // aplica snap se ativo
+    Offset p = Offset(
+      sceneTarget.dx.clamp(0, _imgW),
+      sceneTarget.dy.clamp(0, _imgH),
+    );
+    if (_snapToGrid && _gridStep > 0) {
+      p = Offset(
+        (p.dx / _gridStep).round() * _gridStep,
+        (p.dy / _gridStep).round() * _gridStep,
+      );
+    }
+
+    final s = _ivController.value.storage[0]; // escala atual (X)
+    final center = Offset(_viewportSize.width / 2, _viewportSize.height / 2);
+    final tx = center.dx - p.dx * s;
+    final ty = center.dy - p.dy * s;
+
+    final m = Matrix4.identity();
+    m.setEntry(0, 0, s);
+    m.setEntry(1, 1, s);
+    m.setEntry(2, 2, 1);
+    m.setEntry(0, 3, tx);
+    m.setEntry(1, 3, ty);
+    _ivController.value = m;
+    setState(() {});
   }
 
   Future<void> _pickImage() async {
@@ -110,7 +145,14 @@ class _CoordHomeState extends State<CoordHome> {
     if (_img == null) return;
     // limita dentro da imagem
     final clamped = Offset(scene.dx.clamp(0, _imgW), scene.dy.clamp(0, _imgH));
-    setState(() => _hoverScene = clamped);
+    Offset pos = clamped;
+    if (_snapToGrid && _gridStep > 0) {
+      pos = Offset(
+        (pos.dx / _gridStep).round() * _gridStep,
+        (pos.dy / _gridStep).round() * _gridStep,
+      );
+    }
+    setState(() => _hoverScene = pos);
   }
 
   void _onPointerDown(PointerDownEvent e, RenderBox box) {
@@ -357,7 +399,7 @@ class _CoordHomeState extends State<CoordHome> {
         ),
         actions: [
           IconButton(
-            tooltip: 'Abrir imagem…',
+            tooltip: 'Open image…',
             onPressed: _pickImage,
             icon: const Icon(Icons.image_outlined, size: 20),
             iconSize: 20,
@@ -365,13 +407,13 @@ class _CoordHomeState extends State<CoordHome> {
           if (hasImg) ...[
             const VerticalDivider(),
             IconButton(
-              tooltip: 'Exportar JSON',
+              tooltip: 'Export JSON',
               onPressed: _exportJson,
               icon: const Icon(Icons.save_alt, size: 20),
               iconSize: 20,
             ),
             IconButton(
-              tooltip: 'Importar JSON',
+              tooltip: 'Import JSON',
               onPressed: _importJson,
               icon: const Icon(Icons.file_upload, size: 20),
               iconSize: 20,
@@ -401,13 +443,16 @@ class _CoordHomeState extends State<CoordHome> {
                           const Icon(Icons.grid_on, size: 14),
                           const SizedBox(width: 2),
                           const Text('Grid', style: TextStyle(fontSize: 12)),
-                          Transform.scale(
-                            scale: 0.7,
-                            child: Switch(
-                              value: _showGrid,
-                              onChanged: (v) => setState(() => _showGrid = v),
-                              materialTapTargetSize:
-                                  MaterialTapTargetSize.shrinkWrap,
+                          Tooltip(
+                            message: 'Show/hide grid overlay',
+                            child: Transform.scale(
+                              scale: 0.7,
+                              child: Switch(
+                                value: _showGrid,
+                                onChanged: (v) => setState(() => _showGrid = v),
+                                materialTapTargetSize:
+                                    MaterialTapTargetSize.shrinkWrap,
+                              ),
                             ),
                           ),
                         ],
@@ -418,13 +463,17 @@ class _CoordHomeState extends State<CoordHome> {
                           const Icon(Icons.control_camera, size: 14),
                           const SizedBox(width: 2),
                           const Text('Snap', style: TextStyle(fontSize: 12)),
-                          Transform.scale(
-                            scale: 0.7,
-                            child: Switch(
-                              value: _snapToGrid,
-                              onChanged: (v) => setState(() => _snapToGrid = v),
-                              materialTapTargetSize:
-                                  MaterialTapTargetSize.shrinkWrap,
+                          Tooltip(
+                            message: 'Snap markers to grid points',
+                            child: Transform.scale(
+                              scale: 0.7,
+                              child: Switch(
+                                value: _snapToGrid,
+                                onChanged:
+                                    (v) => setState(() => _snapToGrid = v),
+                                materialTapTargetSize:
+                                    MaterialTapTargetSize.shrinkWrap,
+                              ),
                             ),
                           ),
                         ],
@@ -434,15 +483,18 @@ class _CoordHomeState extends State<CoordHome> {
                         children: [
                           const Text('Passo:', style: TextStyle(fontSize: 12)),
                           const SizedBox(width: 4),
-                          SizedBox(
-                            width: 120,
-                            child: Slider(
-                              value: _gridStep,
-                              onChanged: (v) => setState(() => _gridStep = v),
-                              min: 4,
-                              max: 40,
-                              divisions: 9,
-                              label: '${_gridStep.toStringAsFixed(0)}px',
+                          Tooltip(
+                            message: 'Adjust grid spacing',
+                            child: SizedBox(
+                              width: 120,
+                              child: Slider(
+                                value: _gridStep,
+                                onChanged: (v) => setState(() => _gridStep = v),
+                                min: 4,
+                                max: 40,
+                                divisions: 9,
+                                label: '${_gridStep.toStringAsFixed(0)}px',
+                              ),
                             ),
                           ),
                           Text(
@@ -454,16 +506,22 @@ class _CoordHomeState extends State<CoordHome> {
                           ),
                         ],
                       ),
-                      Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Icon(Icons.photo_size_select_actual, size: 14),
-                          const SizedBox(width: 3),
-                          Text(
-                            '${_imgW.toStringAsFixed(0)}×${_imgH.toStringAsFixed(0)}',
-                            style: const TextStyle(fontSize: 11),
-                          ),
-                        ],
+                      Tooltip(
+                        message: 'Image dimensions (width × height in pixels)',
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(
+                              Icons.photo_size_select_actual,
+                              size: 14,
+                            ),
+                            const SizedBox(width: 3),
+                            Text(
+                              '${_imgW.toStringAsFixed(0)}×${_imgH.toStringAsFixed(0)}',
+                              style: const TextStyle(fontSize: 11),
+                            ),
+                          ],
+                        ),
                       ),
                       Row(
                         mainAxisSize: MainAxisSize.min,
@@ -471,76 +529,230 @@ class _CoordHomeState extends State<CoordHome> {
                           const Icon(Icons.picture_as_pdf, size: 14),
                           const SizedBox(width: 3),
                           const Text('W:', style: TextStyle(fontSize: 11)),
-                          SizedBox(
-                            width: 60,
-                            child: TextField(
-                              controller: _pdfWController,
-                              onSubmitted: (v) {
-                                final newW = double.tryParse(v) ?? _pageW;
-                                setState(() {
-                                  _pdfW = newW;
-                                  _pdfWController.text = newW.toStringAsFixed(
-                                    0,
-                                  );
-                                });
-                              },
-                              keyboardType: TextInputType.number,
-                              style: const TextStyle(fontSize: 11),
-                              decoration: const InputDecoration(
-                                isDense: true,
-                                contentPadding: EdgeInsets.symmetric(
-                                  horizontal: 4,
-                                  vertical: 4,
+                          Tooltip(
+                            message: 'PDF page width in points',
+                            child: SizedBox(
+                              width: 60,
+                              child: TextField(
+                                controller: _pdfWController,
+                                onSubmitted: (v) {
+                                  final newW = double.tryParse(v) ?? _pageW;
+                                  setState(() {
+                                    _pdfW = newW;
+                                    _pdfWController.text = newW.toStringAsFixed(
+                                      0,
+                                    );
+                                  });
+                                },
+                                keyboardType: TextInputType.number,
+                                style: const TextStyle(fontSize: 11),
+                                decoration: const InputDecoration(
+                                  isDense: true,
+                                  contentPadding: EdgeInsets.symmetric(
+                                    horizontal: 4,
+                                    vertical: 4,
+                                  ),
                                 ),
                               ),
                             ),
                           ),
                           const SizedBox(width: 4),
                           const Text('H:', style: TextStyle(fontSize: 11)),
-                          SizedBox(
-                            width: 60,
-                            child: TextField(
-                              controller: _pdfHController,
-                              onSubmitted: (v) {
-                                final newH = double.tryParse(v) ?? _pageH;
-                                setState(() {
-                                  _pdfH = newH;
-                                  _pdfHController.text = newH.toStringAsFixed(
-                                    0,
-                                  );
-                                });
-                              },
-                              keyboardType: TextInputType.number,
-                              style: const TextStyle(fontSize: 11),
-                              decoration: const InputDecoration(
-                                isDense: true,
-                                contentPadding: EdgeInsets.symmetric(
-                                  horizontal: 4,
-                                  vertical: 4,
+                          Tooltip(
+                            message: 'PDF page height in points',
+                            child: SizedBox(
+                              width: 60,
+                              child: TextField(
+                                controller: _pdfHController,
+                                onSubmitted: (v) {
+                                  final newH = double.tryParse(v) ?? _pageH;
+                                  setState(() {
+                                    _pdfH = newH;
+                                    _pdfHController.text = newH.toStringAsFixed(
+                                      0,
+                                    );
+                                  });
+                                },
+                                keyboardType: TextInputType.number,
+                                style: const TextStyle(fontSize: 11),
+                                decoration: const InputDecoration(
+                                  isDense: true,
+                                  contentPadding: EdgeInsets.symmetric(
+                                    horizontal: 4,
+                                    vertical: 4,
+                                  ),
                                 ),
                               ),
                             ),
                           ),
                         ],
                       ),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 3,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Theme.of(context).colorScheme.primaryContainer,
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Text(
-                          'X:${_scaleX.toStringAsFixed(3)} Y:${_scaleY.toStringAsFixed(3)}',
-                          style: TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w600,
+                      // GoTo (ir para X/Y – imagem (px) ou PDF (pt))
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(Icons.my_location, size: 14),
+                          const SizedBox(width: 3),
+                          const Text('GoTo:', style: TextStyle(fontSize: 11)),
+                          const SizedBox(width: 4),
+                          Tooltip(
+                            message: 'Escolha o sistema: IMG (px) ou PDF (pt)',
+                            child: DropdownButtonHideUnderline(
+                              child: DropdownButton<bool>(
+                                value: _gotoIsPdf,
+                                items: const [
+                                  DropdownMenuItem<bool>(
+                                    value: false,
+                                    child: Text(
+                                      'IMG',
+                                      style: TextStyle(fontSize: 11),
+                                    ),
+                                  ),
+                                  DropdownMenuItem<bool>(
+                                    value: true,
+                                    child: Text(
+                                      'PDF',
+                                      style: TextStyle(fontSize: 11),
+                                    ),
+                                  ),
+                                ],
+                                onChanged:
+                                    (v) =>
+                                        setState(() => _gotoIsPdf = v ?? false),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 4),
+                          Tooltip(
+                            message:
+                                _gotoIsPdf
+                                    ? 'X em pontos (PDF)'
+                                    : 'X em pixels (imagem)',
+                            child: SizedBox(
+                              width: 70,
+                              child: TextField(
+                                controller: _gotoXController,
+                                keyboardType: TextInputType.number,
+                                style: const TextStyle(fontSize: 11),
+                                decoration: InputDecoration(
+                                  isDense: true,
+                                  hintText: _gotoIsPdf ? 'X (pt)' : 'X (px)',
+                                  contentPadding: const EdgeInsets.symmetric(
+                                    horizontal: 4,
+                                    vertical: 4,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 4),
+                          Tooltip(
+                            message:
+                                _gotoIsPdf
+                                    ? 'Y em pontos (PDF). Origem canto inferior esquerdo'
+                                    : 'Y em pixels (imagem). Origem canto superior esquerdo',
+                            child: SizedBox(
+                              width: 70,
+                              child: TextField(
+                                controller: _gotoYController,
+                                keyboardType: TextInputType.number,
+                                style: const TextStyle(fontSize: 11),
+                                decoration: InputDecoration(
+                                  isDense: true,
+                                  hintText: _gotoIsPdf ? 'Y (pt)' : 'Y (px)',
+                                  contentPadding: const EdgeInsets.symmetric(
+                                    horizontal: 4,
+                                    vertical: 4,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 6),
+                          Tooltip(
+                            message:
+                                'Centraliza no ponto e abre o diálogo para marcar',
+                            child: FilledButton(
+                              style: FilledButton.styleFrom(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 10,
+                                  vertical: 6,
+                                ),
+                                minimumSize: const Size(0, 28),
+                                textStyle: const TextStyle(fontSize: 11),
+                              ),
+                              onPressed: () async {
+                                if (_img == null) return;
+                                final x = double.tryParse(
+                                  _gotoXController.text,
+                                );
+                                final y = double.tryParse(
+                                  _gotoYController.text,
+                                );
+                                if (x == null || y == null) return;
+                                Offset pos;
+                                if (_gotoIsPdf) {
+                                  // PDF (pt) -> imagem (px)
+                                  final imgX = _scaleX == 0 ? 0.0 : x / _scaleX;
+                                  final imgY =
+                                      _scaleY == 0
+                                          ? 0.0
+                                          : (_pageH - y) / _scaleY;
+                                  pos = Offset(imgX, imgY);
+                                } else {
+                                  pos = Offset(x, y);
+                                }
+                                // clamp e snap para consistência
+                                pos = Offset(
+                                  pos.dx.clamp(0, _imgW),
+                                  pos.dy.clamp(0, _imgH),
+                                );
+                                if (_snapToGrid && _gridStep > 0) {
+                                  pos = Offset(
+                                    (pos.dx / _gridStep).round() * _gridStep,
+                                    (pos.dy / _gridStep).round() * _gridStep,
+                                  );
+                                }
+                                _goTo(pos);
+
+                                // Abre diálogo para permitir salvar marcador neste ponto
+                                final name = await _askName(context);
+                                if (name != null && name.trim().isNotEmpty) {
+                                  setState(
+                                    () => _markers.add(
+                                      MarkerPoint(name: name.trim(), pos: pos),
+                                    ),
+                                  );
+                                }
+                              },
+                              child: const Text('Ir'),
+                            ),
+                          ),
+                        ],
+                      ),
+                      Tooltip(
+                        message:
+                            'Scale factors for converting image coordinates to PDF points',
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 3,
+                          ),
+                          decoration: BoxDecoration(
                             color:
-                                Theme.of(
-                                  context,
-                                ).colorScheme.onPrimaryContainer,
+                                Theme.of(context).colorScheme.primaryContainer,
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Text(
+                            'X:${_scaleX.toStringAsFixed(3)} Y:${_scaleY.toStringAsFixed(3)}',
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                              color:
+                                  Theme.of(
+                                    context,
+                                  ).colorScheme.onPrimaryContainer,
+                            ),
                           ),
                         ),
                       ),
@@ -576,32 +788,35 @@ class _CoordHomeState extends State<CoordHome> {
                             ),
                           ),
                           const SizedBox(width: 8),
-                          FilledButton.icon(
-                            style: FilledButton.styleFrom(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 8,
-                                vertical: 4,
+                          Tooltip(
+                            message: 'Add marker at current cursor position',
+                            child: FilledButton.icon(
+                              style: FilledButton.styleFrom(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                  vertical: 4,
+                                ),
+                                minimumSize: const Size(0, 28),
+                                textStyle: const TextStyle(fontSize: 11),
                               ),
-                              minimumSize: const Size(0, 28),
-                              textStyle: const TextStyle(fontSize: 11),
+                              onPressed: () async {
+                                final m = MarkerPoint(
+                                  name: 'campo_${_markers.length + 1}',
+                                  pos:
+                                      _snapToGrid && _gridStep > 0
+                                          ? Offset(
+                                            (hoverImg.dx / _gridStep).round() *
+                                                _gridStep,
+                                            (hoverImg.dy / _gridStep).round() *
+                                                _gridStep,
+                                          )
+                                          : hoverImg,
+                                );
+                                setState(() => _markers.add(m));
+                              },
+                              icon: const Icon(Icons.add_location, size: 14),
+                              label: const Text('Marcar'),
                             ),
-                            onPressed: () async {
-                              final m = MarkerPoint(
-                                name: 'campo_${_markers.length + 1}',
-                                pos:
-                                    _snapToGrid && _gridStep > 0
-                                        ? Offset(
-                                          (hoverImg.dx / _gridStep).round() *
-                                              _gridStep,
-                                          (hoverImg.dy / _gridStep).round() *
-                                              _gridStep,
-                                        )
-                                        : hoverImg,
-                              );
-                              setState(() => _markers.add(m));
-                            },
-                            icon: const Icon(Icons.add_location, size: 14),
-                            label: const Text('Marcar'),
                           ),
                         ],
                       ),
@@ -617,6 +832,10 @@ class _CoordHomeState extends State<CoordHome> {
                 hasImg
                     ? LayoutBuilder(
                       builder: (ctx, constraints) {
+                        _viewportSize = Size(
+                          constraints.maxWidth,
+                          constraints.maxHeight,
+                        );
                         return Listener(
                           onPointerHover:
                               (e) => _onHover(
@@ -675,10 +894,13 @@ class _CoordHomeState extends State<CoordHome> {
                             'Carrega um screenshot do PDF (página 1, 2, 3...)',
                           ),
                           const SizedBox(height: 12),
-                          FilledButton.icon(
-                            onPressed: _pickImage,
-                            icon: const Icon(Icons.image_outlined),
-                            label: const Text('Abrir imagem'),
+                          Tooltip(
+                            message: 'Open image file',
+                            child: FilledButton.icon(
+                              onPressed: _pickImage,
+                              icon: const Icon(Icons.image_outlined),
+                              label: const Text('Abrir imagem'),
+                            ),
                           ),
                         ],
                       ),
@@ -687,7 +909,7 @@ class _CoordHomeState extends State<CoordHome> {
           if (_markers.isNotEmpty) ...[
             const Divider(height: 1),
             Container(
-              height: 84,
+              height: 96,
               color: Theme.of(context).colorScheme.surface,
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
               child: Row(
@@ -695,50 +917,53 @@ class _CoordHomeState extends State<CoordHome> {
                   // Botão limpar todos
                   Container(
                     margin: const EdgeInsets.only(right: 8),
-                    child: Material(
-                      color: Theme.of(context).colorScheme.errorContainer,
-                      borderRadius: BorderRadius.circular(6),
-                      child: InkWell(
-                        onTap: () async {
-                          final confirmed = await _confirm(
-                            context,
-                            'Remover todos os ${_markers.length} marcadores?',
-                          );
-                          if (confirmed) {
-                            setState(() => _markers.clear());
-                          }
-                        },
+                    child: Tooltip(
+                      message: 'Clear all markers',
+                      child: Material(
+                        color: Theme.of(context).colorScheme.errorContainer,
                         borderRadius: BorderRadius.circular(6),
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 4,
-                          ),
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(
-                                Icons.delete_sweep,
-                                size: 20,
-                                color:
-                                    Theme.of(
-                                      context,
-                                    ).colorScheme.onErrorContainer,
-                              ),
-                              const SizedBox(height: 2),
-                              Text(
-                                'Limpar\nTodos',
-                                textAlign: TextAlign.center,
-                                style: TextStyle(
-                                  fontSize: 8,
-                                  height: 1.1,
+                        child: InkWell(
+                          onTap: () async {
+                            final confirmed = await _confirm(
+                              context,
+                              'Remover todos os ${_markers.length} marcadores?',
+                            );
+                            if (confirmed) {
+                              setState(() => _markers.clear());
+                            }
+                          },
+                          borderRadius: BorderRadius.circular(6),
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 4,
+                            ),
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  Icons.delete_sweep,
+                                  size: 20,
                                   color:
                                       Theme.of(
                                         context,
                                       ).colorScheme.onErrorContainer,
                                 ),
-                              ),
-                            ],
+                                const SizedBox(height: 2),
+                                Text(
+                                  'Limpar\nTodos',
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(
+                                    fontSize: 8,
+                                    height: 1.1,
+                                    color:
+                                        Theme.of(
+                                          context,
+                                        ).colorScheme.onErrorContainer,
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
                         ),
                       ),
@@ -814,53 +1039,62 @@ class _CoordHomeState extends State<CoordHome> {
                               Row(
                                 mainAxisAlignment: MainAxisAlignment.end,
                                 children: [
-                                  InkWell(
-                                    onTap: () {
-                                      Clipboard.setData(
-                                        ClipboardData(
-                                          text:
-                                              '{"x":${pdfX.toStringAsFixed(1)},"y":${pdfY.toStringAsFixed(1)}}',
-                                        ),
-                                      );
-                                      ScaffoldMessenger.of(
-                                        context,
-                                      ).showSnackBar(
-                                        SnackBar(
-                                          content: Text('Copiado: ${m.name}'),
-                                          duration: const Duration(
-                                            milliseconds: 800,
+                                  Tooltip(
+                                    message:
+                                        'Copy PDF coordinates to clipboard',
+                                    child: InkWell(
+                                      onTap: () {
+                                        Clipboard.setData(
+                                          ClipboardData(
+                                            text:
+                                                '{"x":${pdfX.toStringAsFixed(1)},"y":${pdfY.toStringAsFixed(1)}}',
                                           ),
+                                        );
+                                        ScaffoldMessenger.of(
+                                          context,
+                                        ).showSnackBar(
+                                          SnackBar(
+                                            content: Text('Copiado: ${m.name}'),
+                                            duration: const Duration(
+                                              milliseconds: 800,
+                                            ),
+                                          ),
+                                        );
+                                      },
+                                      child: Padding(
+                                        padding: const EdgeInsets.all(4),
+                                        child: Icon(
+                                          Icons.copy,
+                                          size: 14,
+                                          color:
+                                              Theme.of(
+                                                context,
+                                              ).colorScheme.primary,
                                         ),
-                                      );
-                                    },
-                                    child: Padding(
-                                      padding: const EdgeInsets.all(4),
-                                      child: Icon(
-                                        Icons.copy,
-                                        size: 14,
-                                        color:
-                                            Theme.of(
-                                              context,
-                                            ).colorScheme.primary,
                                       ),
                                     ),
                                   ),
-                                  InkWell(
-                                    onTap: () async {
-                                      final confirmed = await _confirm(
-                                        context,
-                                        'Remover "${m.name}"?',
-                                      );
-                                      if (confirmed)
-                                        setState(() => _markers.removeAt(i));
-                                    },
-                                    child: Padding(
-                                      padding: const EdgeInsets.all(4),
-                                      child: Icon(
-                                        Icons.delete_outline,
-                                        size: 14,
-                                        color:
-                                            Theme.of(context).colorScheme.error,
+                                  Tooltip(
+                                    message: 'Delete this marker',
+                                    child: InkWell(
+                                      onTap: () async {
+                                        final confirmed = await _confirm(
+                                          context,
+                                          'Remover "${m.name}"?',
+                                        );
+                                        if (confirmed)
+                                          setState(() => _markers.removeAt(i));
+                                      },
+                                      child: Padding(
+                                        padding: const EdgeInsets.all(4),
+                                        child: Icon(
+                                          Icons.delete_outline,
+                                          size: 14,
+                                          color:
+                                              Theme.of(
+                                                context,
+                                              ).colorScheme.error,
+                                        ),
                                       ),
                                     ),
                                   ),
