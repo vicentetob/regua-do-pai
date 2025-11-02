@@ -3,6 +3,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:ui' as ui;
 import 'dart:io' as io; // Desktop/mobile
+import 'dart:typed_data';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
@@ -354,6 +355,156 @@ class _CoordHomeState extends State<CoordHome> {
     }
   }
 
+  Future<void> _exportProject() async {
+    if (_img == null) return;
+    final byteData = await _img!.toByteData(format: ui.ImageByteFormat.png);
+    if (byteData == null) return;
+    final pngBytes = byteData.buffer.asUint8List();
+    final pngB64 = base64.encode(pngBytes);
+
+    final m = _ivController.value.storage;
+    final project = <String, dynamic>{
+      'version': 1,
+      'name': 'Project ${DateTime.now().toIso8601String()}',
+      'meta': {
+        'imageWidth': _imgW,
+        'imageHeight': _imgH,
+        'pdfWidth': _pageW,
+        'pdfHeight': _pageH,
+        'origin': 'bottomLeft',
+        'scaleX': _scaleX,
+        'scaleY': _scaleY,
+        'showGrid': _showGrid,
+        'snapToGrid': _snapToGrid,
+        'gridStep': _gridStep,
+        'createdAt': DateTime.now().toIso8601String(),
+      },
+      'image': {
+        'mime': 'image/png',
+        'data': pngB64,
+      },
+      'view': {
+        'scale': m[0], // m00
+        'tx': m[12],   // m03
+        'ty': m[13],   // m13
+      },
+      'markers': _markers
+          .map((e) => {
+                'name': e.name,
+                'image': {
+                  'x': e.pos.dx,
+                  'y': e.pos.dy,
+                },
+              })
+          .toList(growable: false),
+    };
+
+    final jsonStr = const JsonEncoder.withIndent('  ').convert(project);
+    await Clipboard.setData(ClipboardData(text: jsonStr));
+
+    if (!kIsWeb) {
+      final path = await FilePicker.platform.saveFile(
+        dialogTitle: 'Save project (.json)',
+        fileName: 'project.regua.json',
+        type: FileType.custom,
+        allowedExtensions: ['json'],
+      );
+      if (path != null) {
+        await io.File(path).writeAsString(jsonStr);
+      }
+    }
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Project exported (copied to clipboard).')),
+      );
+    }
+  }
+
+  Future<void> _importProject() async {
+    final res = await FilePicker.platform.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: ['json'],
+      withData: true,
+    );
+    if (res == null) return;
+    final txtBytes = res.files.single.bytes ??
+        await io.File(res.files.single.path!).readAsBytes();
+    final str = utf8.decode(txtBytes);
+    final obj = jsonDecode(str) as Map<String, dynamic>;
+
+    // Flexible support: accept either full project or legacy markers JSON
+    final isProject = obj.containsKey('image') && obj.containsKey('markers');
+    if (!isProject) {
+      // Fallback to legacy import
+      return _importJson();
+    }
+
+    final imageMap = obj['image'] as Map<String, dynamic>;
+    final dataB64 = imageMap['data'] as String?;
+    if (dataB64 == null) return;
+    final bytes = base64.decode(dataB64);
+    final img = await _decode(Uint8List.fromList(bytes));
+
+    final meta = (obj['meta'] as Map<String, dynamic>?) ?? {};
+    final showGrid = (meta['showGrid'] as bool?) ?? _showGrid;
+    final snapToGrid = (meta['snapToGrid'] as bool?) ?? _snapToGrid;
+    final gridStep = (meta['gridStep'] as num?)?.toDouble() ?? _gridStep;
+    final pdfW = (meta['pdfWidth'] as num?)?.toDouble() ?? img.width.toDouble();
+    final pdfH = (meta['pdfHeight'] as num?)?.toDouble() ?? img.height.toDouble();
+
+    final markersList = (obj['markers'] as List<dynamic>? ?? [])
+        .map((e) => e as Map<String, dynamic>)
+        .map((m) {
+          final im = (m['image'] ?? {}) as Map<String, dynamic>;
+          return MarkerPoint(
+            name: (m['name'] as String?) ?? 'field',
+            pos: Offset(
+              (im['x'] as num).toDouble(),
+              (im['y'] as num).toDouble(),
+            ),
+          );
+        })
+        .toList(growable: false);
+
+    // Restore view if available
+    Matrix4? view;
+    final viewMap = obj['view'] as Map<String, dynamic>?;
+    if (viewMap != null) {
+      final s = (viewMap['scale'] as num?)?.toDouble() ?? 1.0;
+      final tx = (viewMap['tx'] as num?)?.toDouble() ?? 0.0;
+      final ty = (viewMap['ty'] as num?)?.toDouble() ?? 0.0;
+      final m = Matrix4.identity();
+      m.setEntry(0, 0, s);
+      m.setEntry(1, 1, s);
+      m.setEntry(2, 2, 1);
+      m.setEntry(0, 3, tx);
+      m.setEntry(1, 3, ty);
+      view = m;
+    }
+
+    setState(() {
+      _img = img;
+      _pdfW = pdfW;
+      _pdfH = pdfH;
+      _pdfWController.text = _pageW.toStringAsFixed(0);
+      _pdfHController.text = _pageH.toStringAsFixed(0);
+      _showGrid = showGrid;
+      _snapToGrid = snapToGrid;
+      _gridStep = gridStep;
+      _markers
+        ..clear()
+        ..addAll(markersList);
+      _ivController.value = view ?? Matrix4.identity();
+    });
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Project loaded.')),
+      );
+    }
+  }
+
   Future<void> _importJson() async {
     final res = await FilePicker.platform.pickFiles(
       type: FileType.custom,
@@ -456,6 +607,21 @@ class _CoordHomeState extends State<CoordHome> {
               ),
             ),
           ),
+          const SizedBox(width: 8),
+          Tooltip(
+            message: 'Abrir um projeto salvo (.json)',
+            child: OutlinedButton.icon(
+              onPressed: _importProject,
+              icon: const Icon(Icons.folder_open, size: 20),
+              label: const Text('Open Project'),
+              style: OutlinedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 8,
+                ),
+              ),
+            ),
+          ),
           if (hasImg) ...[
             const SizedBox(width: 8),
             Tooltip(
@@ -464,6 +630,21 @@ class _CoordHomeState extends State<CoordHome> {
                 onPressed: _exportJson,
                 icon: const Icon(Icons.download, size: 20),
                 label: const Text('Export JSON'),
+                style: FilledButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 8,
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Tooltip(
+              message: 'Salvar projeto (imagem + marcadores + configs)',
+              child: FilledButton.icon(
+                onPressed: _exportProject,
+                icon: const Icon(Icons.save_alt, size: 20),
+                label: const Text('Save Project'),
                 style: FilledButton.styleFrom(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 16,
