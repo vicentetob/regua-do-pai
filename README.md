@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 # 🧭 The Father's Ruler (Régua do Pai)
 
 **A free visual tool for developers to find X/Y coordinates inside PDFs and images.**  
@@ -11,7 +10,7 @@ Built with **Flutter Web** by [Tobias Vicente Flores](https://github.com/vicente
 
 ## 🚀 Overview
 
-The **Father’s Ruler** helps developers working with libraries like  
+The **Father's Ruler** helps developers working with libraries like  
 [`pdf-lib`](https://pdf-lib.js.org/), `jsPDF`, or `PDFKit` to easily find  
 exact coordinates for text, images, and shapes within PDF templates.
 
@@ -25,104 +24,87 @@ No more trial-and-error — just hover your mouse and copy the coordinates.
 - 📏 **Grid & Snap Options:** Adjustable grid size and snapping for precision placement.  
 - ⚙️ **JSON Export:** Save all marked points in a ready-to-use format for your code.  
 - 💻 **Cross-Compatible:** Works with pdf-lib, jsPDF, PDFKit, and Flutter PDF libraries.  
-- ⚡ **Runs in the Browser:** No installation, no login, just open and use.  
+- ⚡ **Runs in the Browser:** No installation, no login, just open and use.
 
 ---
 
-## 🧑‍💻 Example Usage
+## 📘 PDF Coordinate Inspector
 
-```js
-// Example using pdf-lib
-page.drawText("Hello World!", {
-  x: 152,
-  y: 473,
-});
-📘 PDF Coordinate Inspector (PDF/Image Ruler)
 A visual tool for inspecting and measuring coordinates on an image (screenshot of a PDF)
 and obtaining their corresponding positions in the PDF coordinate system.
 Perfect for mapping fields in document generation templates.
 
-🧩 Overview
-Upload a screenshot of a PDF page.
+### 🧩 Overview
 
-Adjust the target PDF dimensions (W/H) — scaling (X and Y) is auto-calculated.
+1. Upload a screenshot of a PDF page.
+2. Adjust the target PDF dimensions (W/H) — scaling (X and Y) is auto-calculated.
+3. Mark points with quick clicks (name each field), pan/zoom with drag or pinch.
+4. Copy PDF coordinates, export/import JSON with all markers.
+5. Configurable grid with optional snap for alignment.
 
-Mark points with quick clicks (name each field), pan/zoom with drag or pinch.
+### 🪄 Main Features
 
-Copy PDF coordinates, export/import JSON with all markers.
+- Grid with main lines every 5 steps (better visibility).
+- High-contrast crosshair cursor with center dot.
+- Readable labels over each marker.
+- Compact marker list at the bottom with copy/delete shortcuts.
+- Delete individually, by right-click near a point, or via "Clear All".
 
-Configurable grid with optional snap for alignment.
+### 🧭 How to Use
 
-🪄 Main Features
-Grid with main lines every 5 steps (better visibility).
-
-High-contrast crosshair cursor with center dot.
-
-Readable labels over each marker.
-
-Compact marker list at the bottom with copy/delete shortcuts.
-
-Delete individually, by right-click near a point, or via “Clear All”.
-
-🧭 How to Use
-Open an Image
+#### Open an Image
 
 Click the image icon in the AppBar and select a screenshot (PNG/JPG/WebP).
 
-Adjust PDF Dimensions
+#### Adjust PDF Dimensions
 
 In the top panel, fill W and H (points) matching your PDF document.
-
 Scale X/Y updates automatically for px → pt conversion.
 
-Grid and Snap
+#### Grid and Snap
 
-Enable “Grid” and adjust “Step”.
+- Enable "Grid" and adjust "Step".
+- Enable "Snap" for step-multiple precision.
 
-Enable “Snap” for step-multiple precision.
+#### Mark Points
 
-Mark Points
+- Quick click (<500 ms and <10 px movement) opens "Field name" dialog.
+- Drag for navigation — won't open dialog.
+- You can also use the "Mark" button on the top bar.
 
-Quick click (<500 ms and <10 px movement) opens “Field name” dialog.
+#### Copy / Export / Import
 
-Drag for navigation — won’t open dialog.
+- Each marker card has a copy icon for {x, y} in PDF coordinates.
+- AppBar icons let you Export (JSON) or Import marker files.
 
-You can also use the “Mark” button on the top bar.
+#### Delete Markers
 
-Copy / Export / Import
+- Trash icon on card.
+- Right-click near a point (~12 px radius).
+- "Clear All" button removes all markers.
 
-Each marker card has a copy icon for {x, y} in PDF coordinates.
+### 📐 Coordinate System & Conversion
 
-AppBar icons let you Export (JSON) or Import marker files.
+| System | Origin | Unit |
+|--------|--------|------|
+| Image  | Top-left | px |
+| PDF    | Bottom-left | pt |
 
-Delete Markers
-
-Trash icon on card.
-
-Right-click near a point (~12 px radius).
-
-“Clear All” button removes all markers.
-
-📐 Coordinate System & Conversion
-System	Origin	Unit
-Image	Top-left	px
-PDF	Bottom-left	pt
-
-Scales
-
-ini
-Copiar código
+**Scales:**
+```
 scaleX = pdfWidth / imageWidth
 scaleY = pdfHeight / imageHeight
-Conversion
+```
 
-ini
-Copiar código
+**Conversion:**
+```
 pdfX = imageX * scaleX
 pdfY = pdfHeight - (imageY * scaleY)
-🧾 Example JSON Output
-json
-Copiar código
+```
+
+### 🧾 Example JSON Output
+
+```json
 {
   "meta": {
     "imageWidth": 1654,
@@ -140,52 +122,78 @@ Copiar código
     }
   }
 }
-🖱️ Controls & Gestures
-Action	Description
-Zoom	Pinch (touchpad) or Ctrl + scroll
-Pan	Click and drag
-Mark	Quick click (<500 ms)
-Remove	Right-click near marker
+```
 
-🛠️ Build & Run
+### 🖱️ Controls & Gestures
+
+| Action | Description |
+|--------|-------------|
+| Zoom | Pinch (touchpad) or Ctrl + scroll |
+| Pan | Click and drag |
+| Mark | Quick click (<500 ms) |
+| Remove | Right-click near marker |
+
+---
+
+## 🧑‍💻 Example Usage
+
+```js
+// Example using pdf-lib
+page.drawText("Hello World!", {
+  x: 152,
+  y: 473,
+});
+```
+
+---
+
+## 🛠️ Build & Run
+
 Requires: Flutter 3.x installed and configured.
 
-Web (Chrome)
-bash
-Copiar código
+### Web (Chrome)
+```bash
 flutter run -d chrome
-Windows Desktop
-bash
-Copiar código
+```
+
+### Windows Desktop
+```bash
 flutter config --enable-windows-desktop
 flutter run -d windows
-Android (Optional)
-bash
-Copiar código
+```
+
+### Android (Optional)
+```bash
 flutter run -d android
-💡 For production, run flutter build web and host the build/web folder.
+```
 
-🧩 Code Structure
-File	Description
-lib/main.dart	Main UI and state (CoordInspectorApp, CoordHome)
-MarkerPoint	Marker model
-_CanvasPainter	Draws image, grid, crosshair, and markers
-Logic	Handles JSON import/export, click vs drag, deletion, and “clear all”
+💡 For production, run `flutter build web` and host the `build/web` folder.
 
-🧰 Troubleshooting
-Bottom of PDF not visible: Use zoom out or drag down — workspace has extra margin.
+---
 
-Dialog opens while dragging: Only quick clicks (<500 ms and <10 px) trigger dialogs.
+## 🧩 Code Structure
 
-Mismatched coordinates: Ensure PDF W/H match the real PDF dimensions (points).
+| File | Description |
+|------|-------------|
+| `lib/main.dart` | Main UI and state (CoordInspectorApp, CoordHome) |
+| MarkerPoint | Marker model |
+| _CanvasPainter | Draws image, grid, crosshair, and markers |
+| Logic | Handles JSON import/export, click vs drag, deletion, and "clear all" |
 
-🪪 License
-MIT License © 2025 Tobias Vicente Flores
+---
+
+## 🧰 Troubleshooting
+
+- **Bottom of PDF not visible:** Use zoom out or drag down — workspace has extra margin.
+- **Dialog opens while dragging:** Only quick clicks (<500 ms and <10 px) trigger dialogs.
+- **Mismatched coordinates:** Ensure PDF W/H match the real PDF dimensions (points).
+
+---
+
+## 🪪 License
+
+MIT License © 2025 Tobias Vicente Flores  
 Free for personal and commercial use — just credit the author.
 
-Created with ❤️ by Tobias Vicente Flores — Sapucaia do Sul, Brazil.
+Created with ❤️ by Tobias Vicente Flores — Sapucaia do Sul, Brazil.  
 Empowering developers to build smarter tools.
-=======
-# regua-do-pai
-Free tool for developers to find X/Y coordinates in PDFs. Created by Tobias Vicente Flores.
-

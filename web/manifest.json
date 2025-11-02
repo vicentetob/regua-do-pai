@@ -5,7 +5,7 @@
     "display": "standalone",
     "background_color": "#0175C2",
     "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "description": "Visual tool for developers to find X/Y coordinates in PDFs. Free, open source, no installation required.",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [

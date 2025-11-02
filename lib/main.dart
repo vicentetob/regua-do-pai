@@ -223,7 +223,7 @@ class _CoordHomeState extends State<CoordHome> {
     final local = e.localPosition;
     final scene = _ivController.toScene(local);
     final p = Offset(scene.dx, scene.dy);
-    // remover marcador mais próximo (<= 10px)
+    // remove nearest marker (<= 10px)
     int? removeIdx;
     double best = 12;
     for (int i = 0; i < _markers.length; i++) {
@@ -236,7 +236,7 @@ class _CoordHomeState extends State<CoordHome> {
     if (removeIdx != null) {
       final ok = await _confirm(
         context,
-        'Remover "${_markers[removeIdx].name}"?',
+        'Remove "${_markers[removeIdx].name}"?',
       );
       if (ok) setState(() => _markers.removeAt(removeIdx!));
     }
@@ -248,22 +248,22 @@ class _CoordHomeState extends State<CoordHome> {
       context: ctx,
       builder:
           (cxt) => AlertDialog(
-            title: const Text('Nome do campo'),
+            title: const Text('Field name'),
             content: TextField(
               controller: c,
               autofocus: true,
               decoration: const InputDecoration(
-                hintText: 'ex.: codigo_uc, endereco, potencia',
+                hintText: 'e.g.: code_uc, address, power',
               ),
             ),
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(cxt),
-                child: const Text('Cancelar'),
+                child: const Text('Cancel'),
               ),
               FilledButton(
                 onPressed: () => Navigator.pop(cxt, c.text),
-                child: const Text('Salvar'),
+                child: const Text('Save'),
               ),
             ],
           ),
@@ -279,11 +279,11 @@ class _CoordHomeState extends State<CoordHome> {
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(cxt, false),
-                child: const Text('Não'),
+                child: const Text('No'),
               ),
               FilledButton(
                 onPressed: () => Navigator.pop(cxt, true),
-                child: const Text('Sim'),
+                child: const Text('Yes'),
               ),
             ],
           ),
@@ -323,7 +323,7 @@ class _CoordHomeState extends State<CoordHome> {
     await Clipboard.setData(ClipboardData(text: jsonStr));
     if (!kIsWeb) {
       final path = await FilePicker.platform.saveFile(
-        dialogTitle: 'Salvar coordenadas (.json)',
+        dialogTitle: 'Save coordinates (.json)',
         fileName: 'coords.json',
         type: FileType.custom,
         allowedExtensions: ['json'],
@@ -334,9 +334,7 @@ class _CoordHomeState extends State<CoordHome> {
     }
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('JSON copiado para a área de transferência.'),
-        ),
+        const SnackBar(content: Text('JSON copied to clipboard.')),
       );
     }
   }
@@ -481,7 +479,7 @@ class _CoordHomeState extends State<CoordHome> {
                       Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          const Text('Passo:', style: TextStyle(fontSize: 12)),
+                          const Text('Step:', style: TextStyle(fontSize: 12)),
                           const SizedBox(width: 4),
                           Tooltip(
                             message: 'Adjust grid spacing',
@@ -587,7 +585,7 @@ class _CoordHomeState extends State<CoordHome> {
                           ),
                         ],
                       ),
-                      // GoTo (ir para X/Y – imagem (px) ou PDF (pt))
+                      // GoTo (go to X/Y – image (px) or PDF (pt))
                       Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
@@ -596,7 +594,8 @@ class _CoordHomeState extends State<CoordHome> {
                           const Text('GoTo:', style: TextStyle(fontSize: 11)),
                           const SizedBox(width: 4),
                           Tooltip(
-                            message: 'Escolha o sistema: IMG (px) ou PDF (pt)',
+                            message:
+                                'Choose coordinate system: IMG (px) or PDF (pt)',
                             child: DropdownButtonHideUnderline(
                               child: DropdownButton<bool>(
                                 value: _gotoIsPdf,
@@ -626,8 +625,8 @@ class _CoordHomeState extends State<CoordHome> {
                           Tooltip(
                             message:
                                 _gotoIsPdf
-                                    ? 'X em pontos (PDF)'
-                                    : 'X em pixels (imagem)',
+                                    ? 'X in points (PDF)'
+                                    : 'X in pixels (image)',
                             child: SizedBox(
                               width: 70,
                               child: TextField(
@@ -649,8 +648,8 @@ class _CoordHomeState extends State<CoordHome> {
                           Tooltip(
                             message:
                                 _gotoIsPdf
-                                    ? 'Y em pontos (PDF). Origem canto inferior esquerdo'
-                                    : 'Y em pixels (imagem). Origem canto superior esquerdo',
+                                    ? 'Y in points (PDF). Origin bottom-left corner'
+                                    : 'Y in pixels (image). Origin top-left corner',
                             child: SizedBox(
                               width: 70,
                               child: TextField(
@@ -670,8 +669,7 @@ class _CoordHomeState extends State<CoordHome> {
                           ),
                           const SizedBox(width: 6),
                           Tooltip(
-                            message:
-                                'Centraliza no ponto e abre o diálogo para marcar',
+                            message: 'Center on point and open dialog to mark',
                             child: FilledButton(
                               style: FilledButton.styleFrom(
                                 padding: const EdgeInsets.symmetric(
@@ -715,7 +713,7 @@ class _CoordHomeState extends State<CoordHome> {
                                 }
                                 _goTo(pos);
 
-                                // Abre diálogo para permitir salvar marcador neste ponto
+                                // Open dialog to allow saving marker at this point
                                 final name = await _askName(context);
                                 if (name != null && name.trim().isNotEmpty) {
                                   setState(
@@ -725,7 +723,7 @@ class _CoordHomeState extends State<CoordHome> {
                                   );
                                 }
                               },
-                              child: const Text('Ir'),
+                              child: const Text('Go'),
                             ),
                           ),
                         ],
@@ -815,7 +813,7 @@ class _CoordHomeState extends State<CoordHome> {
                                 setState(() => _markers.add(m));
                               },
                               icon: const Icon(Icons.add_location, size: 14),
-                              label: const Text('Marcar'),
+                              label: const Text('Mark'),
                             ),
                           ),
                         ],
@@ -890,16 +888,14 @@ class _CoordHomeState extends State<CoordHome> {
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          const Text(
-                            'Carrega um screenshot do PDF (página 1, 2, 3...)',
-                          ),
+                          const Text('Load a PDF screenshot (page 1, 2, 3...)'),
                           const SizedBox(height: 12),
                           Tooltip(
                             message: 'Open image file',
                             child: FilledButton.icon(
                               onPressed: _pickImage,
                               icon: const Icon(Icons.image_outlined),
-                              label: const Text('Abrir imagem'),
+                              label: const Text('Open image'),
                             ),
                           ),
                         ],
@@ -914,7 +910,7 @@ class _CoordHomeState extends State<CoordHome> {
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
               child: Row(
                 children: [
-                  // Botão limpar todos
+                  // Clear all button
                   Container(
                     margin: const EdgeInsets.only(right: 8),
                     child: Tooltip(
@@ -926,7 +922,7 @@ class _CoordHomeState extends State<CoordHome> {
                           onTap: () async {
                             final confirmed = await _confirm(
                               context,
-                              'Remover todos os ${_markers.length} marcadores?',
+                              'Remove all ${_markers.length} markers?',
                             );
                             if (confirmed) {
                               setState(() => _markers.clear());
@@ -951,7 +947,7 @@ class _CoordHomeState extends State<CoordHome> {
                                 ),
                                 const SizedBox(height: 2),
                                 Text(
-                                  'Limpar\nTodos',
+                                  'Clear\nAll',
                                   textAlign: TextAlign.center,
                                   style: TextStyle(
                                     fontSize: 8,
@@ -969,7 +965,7 @@ class _CoordHomeState extends State<CoordHome> {
                       ),
                     ),
                   ),
-                  // Lista de marcadores
+                  // Marker list
                   Expanded(
                     child: ListView.separated(
                       scrollDirection: Axis.horizontal,
@@ -1054,7 +1050,7 @@ class _CoordHomeState extends State<CoordHome> {
                                           context,
                                         ).showSnackBar(
                                           SnackBar(
-                                            content: Text('Copiado: ${m.name}'),
+                                            content: Text('Copied: ${m.name}'),
                                             duration: const Duration(
                                               milliseconds: 800,
                                             ),
@@ -1080,7 +1076,7 @@ class _CoordHomeState extends State<CoordHome> {
                                       onTap: () async {
                                         final confirmed = await _confirm(
                                           context,
-                                          'Remover "${m.name}"?',
+                                          'Remove "${m.name}"?',
                                         );
                                         if (confirmed)
                                           setState(() => _markers.removeAt(i));
