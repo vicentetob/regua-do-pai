@@ -9,6 +9,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'utils/file_saver.dart' as file_saver;
 
 void main() => runApp(const CoordInspectorApp());
 
@@ -400,9 +401,14 @@ class _CoordHomeState extends State<CoordHome> {
     };
 
     final jsonStr = const JsonEncoder.withIndent('  ').convert(project);
-    await Clipboard.setData(ClipboardData(text: jsonStr));
 
-    if (!kIsWeb) {
+    if (kIsWeb) {
+      await file_saver.saveBytes(
+        'project.regua.json',
+        'application/json;charset=utf-8',
+        utf8.encode(jsonStr),
+      );
+    } else {
       final path = await FilePicker.platform.saveFile(
         dialogTitle: 'Save project (.json)',
         fileName: 'project.regua.json',
@@ -415,9 +421,8 @@ class _CoordHomeState extends State<CoordHome> {
     }
 
     if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Project exported (copied to clipboard).')),
-      );
+      final msg = kIsWeb ? 'Project downloaded.' : 'Project saved.';
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
     }
   }
 
